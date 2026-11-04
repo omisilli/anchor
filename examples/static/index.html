@@ -215,14 +215,28 @@
                 margin-top: 0.5rem;
             }
 
+            /* In section Two, reaching the screen's right edge so it passes
+               under the ↑ button: the negative margin undoes main's
+               centring and padding. */
             .band {
                 display: grid;
                 place-items: center;
                 height: 14rem;
+                margin-top: 1.5rem;
+                margin-right: calc((min(64rem, 100vw) - 100vw) / 2 - 1rem);
                 padding: 1rem;
                 text-align: center;
                 background: var(--fg);
                 color: var(--bg);
+            }
+            .band p {
+                margin: 0;
+                color: inherit;
+            }
+            /* 100vw counts a classic scrollbar too: clip those few pixels
+               rather than scroll sideways. */
+            body {
+                overflow-x: clip;
             }
             footer {
                 padding: 4rem 1rem 6rem;
@@ -287,8 +301,8 @@
                 </p>
                 <p>
                     The header's menu and the side list follow along: the link to the section
-                    you are in is marked. The ↑ button shows after a screen of scrolling and steps
-                    above the dark band and the footer.
+                    you are in is marked. The ↑ button shows after a screen of scrolling and slides
+                    out of the way of the dark band in section Two and of the footer.
                 </p>
                 <div class="try">
                     <div data-pg-anchor="#one">↓ A &lt;div&gt;, not a link</div>
@@ -324,10 +338,19 @@
                 <section id="two">
                     <h2>Two</h2>
                     <p>
+                        Scroll slowly past the dark band below: the ↑ button slides up out of its
+                        way, keeping <code>--pg-anchor-avoid-space</code>, and back down once the
+                        band has gone by — <code>data-pg-anchor-avoid</code> on the band. The
+                        footer is avoided the same way.
+                    </p>
+                    <p>
                         The "3rem lower" button lands here 3rem further down than the menu does:
                         <code>--pg-anchor-edge</code> on that button. A length, so it can change
                         per screen size.
                     </p>
+                    <div class="band" data-pg-anchor-avoid>
+                        <p><code>data-pg-anchor-avoid</code> — the ↑ button slides above this band, then back down.</p>
+                    </div>
                 </section>
                 <section id="three">
                     <h2>Three</h2>
@@ -347,18 +370,14 @@
                 <section id="five">
                     <h2>Five</h2>
                     <p>
-                        Scroll on: the dark band and the footer below are
-                        <code>data-pg-anchor-avoid</code>, and the ↑ button steps above each as it
-                        passes. A section too close to the end to climb to the line under the header
-                        is still marked once the page has reached the bottom.
+                        Scroll on to the footer: it is <code>data-pg-anchor-avoid</code> too, and the
+                        ↑ button steps above it. A section too close to the end to climb to the line
+                        under the header is still marked once the page has reached the bottom.
                     </p>
                 </section>
             </div>
         </main>
 
-        <div class="band" data-pg-anchor-avoid>
-            <p><code>data-pg-anchor-avoid</code> — the ↑ button steps above this band, then above the footer.</p>
-        </div>
         <footer data-pg-anchor-avoid>A footer, avoided too.</footer>
 
         <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
