@@ -1,0 +1,389 @@
+<!doctype html>
+<!-- Open by double-clicking: both halves load from jsDelivr, not from ../..
+     Pinned to this release, so the page and the code always match.
+     Add ?lenis to the address to try the same page with Lenis. -->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>anchor — example</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.0.0/index.css" />
+        <!-- Only takes effect with ?lenis: it styles html.lenis. -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.css" />
+        <style>
+            :root {
+                --bg: #f6f6f4;
+                --surface: #ffffff;
+                --fg: #18181b;
+                --muted: #6b6b72;
+                --line: #e4e4e0;
+                --hover: #f0f0ec;
+                --accent: #2f5bea;
+                --shadow: 0 12px 32px rgb(0 0 0 / 0.12);
+                color-scheme: light dark;
+
+                /* The fixed header's height, and the room every section
+                   keeps below it when a link lands on it. Plain CSS: the
+                   anchor package reads scroll-padding-top. */
+                --header: 3.5rem;
+                scroll-padding-top: calc(var(--header) + 1rem);
+            }
+            @media (width >= 48rem) {
+                :root {
+                    --header: 4.5rem;
+                }
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #111113;
+                    --surface: #1b1b1f;
+                    --fg: #ededef;
+                    --muted: #9a9aa3;
+                    --line: #2c2c31;
+                    --hover: #26262b;
+                    --accent: #7c9cff;
+                    --shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+                }
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+            }
+            body {
+                font:
+                    16px/1.6 system-ui,
+                    -apple-system,
+                    "Segoe UI",
+                    Roboto,
+                    sans-serif;
+                color: var(--fg);
+                background: var(--bg);
+            }
+            code {
+                font:
+                    0.85em/1.4 ui-monospace,
+                    SFMono-Regular,
+                    Menlo,
+                    monospace;
+                background: var(--hover);
+                padding: 0.15em 0.4em;
+                border-radius: 0.35em;
+            }
+            a {
+                color: inherit;
+            }
+
+            /* --- The fixed header and its menu (a spy) --- */
+            header {
+                position: fixed;
+                inset: 0 0 auto;
+                z-index: 10;
+                height: var(--header);
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 0 1rem;
+                background: color-mix(in srgb, var(--bg) 88%, transparent);
+                backdrop-filter: blur(8px);
+                border-bottom: 1px solid var(--line);
+            }
+            header strong {
+                flex: none;
+            }
+            .menu {
+                position: relative;
+                display: flex;
+                gap: 0.25rem;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            .menu a {
+                flex: none;
+                padding: 0.4rem 0.7rem;
+                border-radius: 0.5rem;
+                text-decoration: none;
+                color: var(--muted);
+                transition: color 0.2s;
+            }
+            .menu a[data-pg-anchor-current="true"] {
+                color: var(--fg);
+            }
+            /* Slides under the current link on the spy's variables. */
+            .menu .marker {
+                position: absolute;
+                bottom: 0;
+                left: var(--pg-anchor-current-left);
+                width: var(--pg-anchor-current-width);
+                height: 2px;
+                background: var(--accent);
+                transition:
+                    left 0.3s,
+                    width 0.3s;
+            }
+
+            /* --- Page --- */
+            main {
+                max-width: 64rem;
+                margin: 0 auto;
+                padding: calc(var(--header) + 3rem) 1rem 0;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 2rem;
+            }
+            @media (width >= 48rem) {
+                main {
+                    grid-template-columns: 11rem minmax(0, 1fr);
+                }
+                .intro {
+                    grid-column: 1 / -1;
+                }
+            }
+            h1 {
+                font-size: 1.75rem;
+                line-height: 1.2;
+            }
+            .intro p {
+                color: var(--muted);
+                max-width: 44rem;
+                margin-top: 0.5rem;
+            }
+            .try {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-top: 1.25rem;
+            }
+            .try > * {
+                font: inherit;
+                font-size: 0.9rem;
+                color: inherit;
+                padding: 0.5rem 0.8rem;
+                border: 1px solid var(--line);
+                border-radius: 0.6rem;
+                background: var(--surface);
+                text-decoration: none;
+            }
+
+            /* The second menu — a side list, as a phone's sidebar would be. */
+            .side {
+                display: none;
+            }
+            @media (width >= 48rem) {
+                .side {
+                    display: block;
+                }
+                .side nav {
+                    position: sticky;
+                    top: calc(var(--header) + 2rem);
+                    display: flex;
+                    flex-direction: column;
+                    border-left: 1px solid var(--line);
+                }
+                .side a {
+                    padding: 0.4rem 1rem;
+                    text-decoration: none;
+                    color: var(--muted);
+                }
+                .side a[data-pg-anchor-current="true"] {
+                    color: var(--fg);
+                }
+                .side .marker {
+                    position: absolute;
+                    left: -1px;
+                    top: var(--pg-anchor-current-top);
+                    height: var(--pg-anchor-current-height);
+                    width: 2px;
+                    background: var(--accent);
+                    transition:
+                        top 0.3s,
+                        height 0.3s;
+                }
+            }
+
+            section {
+                min-height: 85vh;
+                padding: 2rem 0;
+                border-top: 1px solid var(--line);
+            }
+            section h2 {
+                font-size: 1.5rem;
+            }
+            section p {
+                color: var(--muted);
+                max-width: 40rem;
+                margin-top: 0.5rem;
+            }
+
+            .band {
+                display: grid;
+                place-items: center;
+                height: 14rem;
+                padding: 1rem;
+                text-align: center;
+                background: var(--fg);
+                color: var(--bg);
+            }
+            footer {
+                padding: 4rem 1rem 6rem;
+                text-align: center;
+                color: var(--muted);
+                border-top: 1px solid var(--line);
+            }
+
+            /* --- Back to top --- */
+            .up {
+                position: fixed;
+                right: 1rem;
+                bottom: 1rem;
+                z-index: 10;
+                width: 3rem;
+                height: 3rem;
+                display: grid;
+                place-items: center;
+                font-size: 1.1rem;
+                color: var(--fg);
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 50%;
+                box-shadow: var(--shadow);
+                cursor: pointer;
+                transition:
+                    opacity 0.3s,
+                    visibility 0.3s;
+                /* Shows after one screen of scrolling; keeps 1rem from
+                   avoided areas. Both lengths change with the screen. */
+                --pg-anchor-show-after: 100svh;
+                --pg-anchor-avoid-space: 1rem;
+            }
+            @media (width >= 48rem) {
+                .up {
+                    right: 1.75rem;
+                    bottom: 1.75rem;
+                    --pg-anchor-show-after: 600px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <strong>anchor</strong>
+            <nav class="menu" data-pg-anchor-spy>
+                <a href="#one" data-pg-anchor>One</a>
+                <a href="#two" data-pg-anchor>Two</a>
+                <a href="#three" data-pg-anchor>Three</a>
+                <a href="#four" data-pg-anchor>Four</a>
+                <a href="#five" data-pg-anchor>Five</a>
+                <span class="marker" aria-hidden="true"></span>
+            </nav>
+        </header>
+
+        <main>
+            <div class="intro">
+                <h1>anchor</h1>
+                <p>
+                    A click glides the page to a section, the top or the bottom — the same glide
+                    with or without Lenis. <span id="mode"></span>
+                </p>
+                <p>
+                    The header's menu and the side list follow along: the link to the section
+                    you are in is marked. The ↑ button shows after a screen of scrolling and steps
+                    above the dark band and the footer.
+                </p>
+                <div class="try">
+                    <div data-pg-anchor="#one">↓ A &lt;div&gt;, not a link</div>
+                    <a href="#three" data-pg-anchor data-pg-anchor-hash="true">Three · writes #three</a>
+                    <button type="button" data-pg-anchor="#four" data-pg-anchor-duration="400">Four · 400ms</button>
+                    <button type="button" data-pg-anchor="#two" style="--pg-anchor-edge: 3rem">Two · 3rem lower</button>
+                    <button type="button" data-pg-anchor="bottom">Bottom</button>
+                    <a id="toggle" href="?lenis">Try with Lenis</a>
+                </div>
+            </div>
+
+            <aside class="side">
+                <nav data-pg-anchor-spy>
+                    <a href="#one" data-pg-anchor>One</a>
+                    <a href="#two" data-pg-anchor>Two</a>
+                    <a href="#three" data-pg-anchor>Three</a>
+                    <a href="#four" data-pg-anchor>Four</a>
+                    <a href="#five" data-pg-anchor>Five</a>
+                    <span class="marker" aria-hidden="true"></span>
+                </nav>
+            </aside>
+
+            <div>
+                <section id="one">
+                    <h2>One</h2>
+                    <p>
+                        Reached from a <code>&lt;div&gt;</code>: <code>data-pg-anchor="#one"</code>
+                        makes it clickable, reachable with Tab and pressed with Enter. Every
+                        section lands below the fixed header — <code>scroll-padding-top</code> on
+                        the page, plain CSS, a different height on phones.
+                    </p>
+                </section>
+                <section id="two">
+                    <h2>Two</h2>
+                    <p>
+                        The "3rem lower" button lands here 3rem further down than the menu does:
+                        <code>--pg-anchor-edge</code> on that button. A length, so it can change
+                        per screen size.
+                    </p>
+                </section>
+                <section id="three">
+                    <h2>Three</h2>
+                    <p>
+                        That link has <code>data-pg-anchor-hash="true"</code>: the address now ends
+                        in <code>#three</code>, and Back returns to where you were. Without it the
+                        address is left as it is.
+                    </p>
+                </section>
+                <section id="four">
+                    <h2>Four</h2>
+                    <p>
+                        <code>data-pg-anchor-duration="400"</code> on that button; the rest take the
+                        1200ms default. Turn the wheel during a glide and it stops — as with Lenis.
+                    </p>
+                </section>
+                <section id="five">
+                    <h2>Five</h2>
+                    <p>
+                        Scroll on: the dark band and the footer below are
+                        <code>data-pg-anchor-avoid</code>, and the ↑ button steps above each as it
+                        passes. A section too close to the end to climb to the line under the header
+                        is still marked once the page has reached the bottom.
+                    </p>
+                </section>
+            </div>
+        </main>
+
+        <div class="band" data-pg-anchor-avoid>
+            <p><code>data-pg-anchor-avoid</code> — the ↑ button steps above this band, then above the footer.</p>
+        </div>
+        <footer data-pg-anchor-avoid>A footer, avoided too.</footer>
+
+        <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
+
+        <script type="module">
+            import { initAnchor, setAnchorScroller, anchorEasing } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.0.0/dist/index.js";
+
+            initAnchor();
+
+            // ?lenis: the same page with Lenis. Hand it in, and it glides.
+            const withLenis = new URLSearchParams(location.search).has("lenis");
+            const mode = document.getElementById("mode");
+            const toggle = document.getElementById("toggle");
+            if (withLenis) {
+                const { default: Lenis } = await import("https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.mjs");
+                const lenis = new Lenis({ autoRaf: true });
+                setAnchorScroller((top, ms) =>
+                    lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }),
+                );
+                mode.textContent = "This page runs Lenis now.";
+                toggle.textContent = "Try without Lenis";
+                toggle.href = "?";
+            } else {
+                mode.textContent = "This page runs without Lenis.";
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,58 @@
+/*
+ * anchor — the CSS half.
+ *
+ * Lengths, set anywhere above the element — with media queries for each
+ * screen size:
+ *   --pg-anchor-edge          extra room above a section it lands on, on
+ *                             top of scroll-padding-top / scroll-margin-top.
+ *                             Default 0px
+ *   --pg-anchor-show-after    how far the page scrolls before a
+ *                             data-pg-anchor-visible element shows.
+ *                             Default 400px; 100svh is "one screen"
+ *   --pg-anchor-avoid-space   the gap kept from a data-pg-anchor-avoid area.
+ *                             Default 0px
+ *
+ * index.ts writes --pg-anchor-lift (how far the element stepped aside)
+ * and, on a data-pg-anchor-spy menu, --pg-anchor-current-left / -top /
+ * -width / -height.
+ */
+
+/* Registered as lengths so the browser resolves 1rem, 100svh, calc() to
+   pixels — index.ts reads them back. */
+@property --pg-anchor-edge {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 0px;
+}
+
+@property --pg-anchor-show-after {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 400px;
+}
+
+@property --pg-anchor-avoid-space {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 0px;
+}
+
+/* Not a link or a button, but still clickable. Zero weight: yours wins. */
+:where([data-pg-anchor]:not(a, button)) {
+    cursor: pointer;
+}
+
+/* Hidden until the page has scrolled far enough — only when JS can say it
+   has. Zero weight, so a transition of your own can fade it. */
+@media (scripting: enabled) {
+    :where([data-pg-anchor-visible="false"]) {
+        visibility: hidden;
+        opacity: 0;
+    }
+}
+
+/* Out of the way of an avoided area, by as much as index.ts measured. The
+   translate property, not transform: a transform of yours is kept. */
+[data-pg-anchor-visible] {
+    translate: 0 calc(var(--pg-anchor-lift, 0px) * -1);
+}

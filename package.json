@@ -1,0 +1,21 @@
+{
+    "name": "@plusguard/anchor",
+    "version": "1.0.0",
+    "description": "In-page scrolling from HTML attributes: to a section, the top or the bottom, with a set duration — with or without Lenis. A back-to-top button that shows after a set scroll and steps out of the way of marked elements. Zero dependencies, framework-agnostic. CSS included.",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+        "./index.css": "./index.css"
+    },
+    "files": ["dist", "index.ts", "index.css", "README.md", "LICENSE"],
+    "sideEffects": ["*.css"],
+    "scripts": {
+        "build": "npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --module es2020 --lib dom,es2020 --strict"
+    },
+    "license": "MIT",
+    "author": "PlusGuard",
+    "repository": { "type": "git", "url": "git+https://github.com/omisilli/anchor.git" },
+    "keywords": ["anchor", "smooth-scroll", "scroll-to", "back-to-top", "scrollspy", "lenis", "data-attributes", "vanilla"]
+}
