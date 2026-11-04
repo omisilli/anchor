@@ -226,8 +226,9 @@
                 margin-right: calc((min(64rem, 100vw) - 100vw) / 2 - 1rem);
                 padding: 1rem;
                 text-align: center;
-                background: var(--fg);
-                color: var(--bg);
+                /* A shade off the page's own background, not a black block. */
+                background: var(--line);
+                color: var(--muted);
             }
             .band + .band {
                 margin-top: 6rem;
@@ -305,7 +306,7 @@
                 <p>
                     The header's menu and the side list follow along: the link to the section
                     you are in is marked. The ↑ button shows after a screen of scrolling and slides
-                    out of the way of the dark band in section Two and of the footer.
+                    out of the way of the grey bands in section Two and of the footer.
                 </p>
                 <div class="try">
                     <div data-pg-anchor="#one">↓ A &lt;div&gt;, not a link</div>
@@ -341,7 +342,7 @@
                 <section id="two">
                     <h2>Two</h2>
                     <p>
-                        Scroll slowly past the two dark bands below and watch the ↑ button. The
+                        Scroll slowly past the two grey bands below and watch the ↑ button. The
                         first, <code>data-pg-anchor-avoid</code>: the button slides up out of its
                         way, keeping <code>--pg-anchor-avoid-space</code>, and drops back once it
                         has gone by — best for areas at the end, like the footer. The second,
