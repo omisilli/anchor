@@ -7,7 +7,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>anchor — example</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.0.0/index.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/index.css" />
         <!-- Only takes effect with ?lenis: it styles html.lenis. -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.css" />
         <style>
@@ -215,8 +215,8 @@
                 margin-top: 0.5rem;
             }
 
-            /* In section Two, reaching the screen's right edge so it passes
-               under the ↑ button: the negative margin undoes main's
+            /* In section Two, reaching the screen's right edge so each one
+               passes the ↑ button: the negative margin undoes main's
                centring and padding. */
             .band {
                 display: grid;
@@ -228,6 +228,9 @@
                 text-align: center;
                 background: var(--fg);
                 color: var(--bg);
+            }
+            .band + .band {
+                margin-top: 6rem;
             }
             .band p {
                 margin: 0;
@@ -338,10 +341,12 @@
                 <section id="two">
                     <h2>Two</h2>
                     <p>
-                        Scroll slowly past the dark band below: the ↑ button slides up out of its
-                        way, keeping <code>--pg-anchor-avoid-space</code>, and back down once the
-                        band has gone by — <code>data-pg-anchor-avoid</code> on the band. The
-                        footer is avoided the same way.
+                        Scroll slowly past the two dark bands below and watch the ↑ button. The
+                        first, <code>data-pg-anchor-avoid</code>: the button slides up out of its
+                        way, keeping <code>--pg-anchor-avoid-space</code>, and drops back once it
+                        has gone by — best for areas at the end, like the footer. The second,
+                        <code>data-pg-anchor-avoid="hide"</code>: the button stays put and passes
+                        under it, going in at one edge and coming out at the other — best mid-page.
                     </p>
                     <p>
                         The "3rem lower" button lands here 3rem further down than the menu does:
@@ -349,7 +354,10 @@
                         per screen size.
                     </p>
                     <div class="band" data-pg-anchor-avoid>
-                        <p><code>data-pg-anchor-avoid</code> — the ↑ button slides above this band, then back down.</p>
+                        <p><code>data-pg-anchor-avoid</code> — the ↑ button slides above this band.</p>
+                    </div>
+                    <div class="band" data-pg-anchor-avoid="hide">
+                        <p><code>data-pg-anchor-avoid="hide"</code> — the ↑ button passes under this band.</p>
                     </div>
                 </section>
                 <section id="three">
@@ -383,7 +391,7 @@
         <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
 
         <script type="module">
-            import { initAnchor, setAnchorScroller, anchorEasing } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.0.0/dist/index.js";
+            import { initAnchor, setAnchorScroller, anchorEasing } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/dist/index.js";
 
             initAnchor();
 

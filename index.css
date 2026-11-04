@@ -12,9 +12,10 @@
  *   --pg-anchor-avoid-space   the gap kept from a data-pg-anchor-avoid area.
  *                             Default 0px
  *
- * index.ts writes --pg-anchor-lift (how far the element stepped aside)
- * and, on a data-pg-anchor-spy menu, --pg-anchor-current-left / -top /
- * -width / -height.
+ * index.ts writes --pg-anchor-lift (how far the element stepped aside),
+ * --pg-anchor-clip (the part a "hide" area covers) and, on a
+ * data-pg-anchor-spy menu, --pg-anchor-current-left / -top / -width /
+ * -height.
  */
 
 /* Registered as lengths so the browser resolves 1rem, 100svh, calc() to
@@ -52,7 +53,14 @@
 }
 
 /* Out of the way of an avoided area, by as much as index.ts measured. The
-   translate property, not transform: a transform of yours is kept. */
+   translate property, not transform: a transform of yours is kept. Under a
+   "hide" area, the covered part is cut off. */
 [data-pg-anchor-visible] {
     translate: 0 calc(var(--pg-anchor-lift, 0px) * -1);
+    clip-path: var(--pg-anchor-clip, none);
+}
+
+/* Wholly under a "hide" area: out of reach of Tab and clicks too. */
+[data-pg-anchor-covered="true"] {
+    visibility: hidden;
 }

@@ -67,7 +67,10 @@ export function Example() {
                 </section>
             ))}
 
-            {/* Avoided: the ↑ button steps above it. */}
+            {/* Mid-page: the ↑ button passes under it. */}
+            <div data-pg-anchor-avoid="hide" className="h-64 bg-neutral-900" />
+
+            {/* At the end: the ↑ button steps above it. */}
             <footer data-pg-anchor-avoid className="bg-black p-16 text-white">
                 Footer
             </footer>

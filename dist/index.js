@@ -23,9 +23,14 @@
  *
  * Showing: an element with data-pg-anchor-visible (write "false" to start)
  * turns "true" once the page has scrolled --pg-anchor-show-after. It also
- * steps out of the way of data-pg-anchor-avoid areas — up when it sits in
- * the lower half of the screen, down in the upper — keeping
- * --pg-anchor-avoid-space, wherever data-pg-anchor-avoid-media matches.
+ * keeps clear of data-pg-anchor-avoid areas, wherever
+ * data-pg-anchor-avoid-media matches:
+ *   data-pg-anchor-avoid          it steps out of the way — up when it sits
+ *                                 in the lower half of the screen, down in
+ *                                 the upper — keeping --pg-anchor-avoid-space
+ *   data-pg-anchor-avoid="hide"   it passes under: the part the area covers
+ *                                 is cut off; wholly under, it gets
+ *                                 data-pg-anchor-covered="true"
  *
  * Spy: in a data-pg-anchor-spy menu, the links whose section has reached
  * the landing line get data-pg-anchor-current="true" and
@@ -43,7 +48,9 @@ const AVOID = "data-pg-anchor-avoid";
 const AVOID_MEDIA = "data-pg-anchor-avoid-media";
 const SPY = "data-pg-anchor-spy";
 const CURRENT = "data-pg-anchor-current";
+const COVERED = "data-pg-anchor-covered";
 const LIFT = "--pg-anchor-lift";
+const CLIP = "--pg-anchor-clip";
 const DEFAULT_DURATION = 1200;
 const DEFAULT_SHOW_AFTER = 400;
 /* Lenis's own curve: off fast, then a long soft landing. */
@@ -194,11 +201,15 @@ function show(el) {
     const after = raw.trim() ? px(raw) : DEFAULT_SHOW_AFTER;
     write(el, VISIBLE, String(scrollY >= after));
 }
-function stepAside(el, areas) {
+function stepAside(el, all) {
     const media = el.getAttribute(AVOID_MEDIA);
+    const areas = all.filter((area) => area.getAttribute(AVOID) !== "hide");
+    const under = all.filter((area) => area.getAttribute(AVOID) === "hide");
+    const rect = el.getBoundingClientRect();
     let lift = 0;
-    if (areas.length && (!media || matchMedia(media).matches)) {
-        const rect = el.getBoundingClientRect();
+    let clipTop = 0;
+    let clipBottom = 0;
+    if (all.length && (!media || matchMedia(media).matches)) {
         // Where it sits without the lift it has now.
         const now = px(el.style.getPropertyValue(LIFT));
         const top = rect.top + now;
@@ -224,8 +235,28 @@ function stepAside(el, areas) {
         // screen, over it, rather than leave the screen.
         if (top - lift < 0 || bottom - lift > innerHeight)
             lift = 0;
+        // "hide" areas: pass under them — the part they cover is cut off,
+        // so the element goes in at one edge and comes out at the other.
+        const at = { top: top - lift, bottom: bottom - lift };
+        for (const area of under) {
+            const a = area.getBoundingClientRect();
+            if (!a.width || !a.height || a.right <= rect.left || a.left >= rect.right)
+                continue;
+            if (a.bottom <= at.top || a.top >= at.bottom)
+                continue;
+            if (a.top <= at.top)
+                clipTop = Math.max(clipTop, Math.min(a.bottom, at.bottom) - at.top);
+            if (a.bottom >= at.bottom)
+                clipBottom = Math.max(clipBottom, at.bottom - Math.max(a.top, at.top));
+        }
     }
     writeVar(el, LIFT, lift ? `${Math.round(lift)}px` : "0px");
+    // Wide side insets keep the shadow on the sides that are not covered.
+    const cutTop = Math.round(clipTop);
+    const cutBottom = Math.round(clipBottom);
+    const covered = cutTop + cutBottom >= Math.round(rect.height);
+    writeVar(el, CLIP, cutTop || cutBottom ? `inset(${cutTop}px -100vmax ${cutBottom}px -100vmax)` : "none");
+    write(el, COVERED, String(covered));
 }
 function spy(menu) {
     const links = [...menu.querySelectorAll(`[${ATTR}]`)];

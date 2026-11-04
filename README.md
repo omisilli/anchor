@@ -14,7 +14,7 @@ script, one stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v1.0.0
+npm install github:omisilli/anchor#v1.1.0
 ```
 
 ```ts
@@ -36,16 +36,16 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.0.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.0.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/dist/index.js";
 
     initAnchor();
 </script>
 ```
 
-Pin the version (`@v1.0.0`) on a live site. A pinned URL never changes;
+Pin the version (`@v1.1.0`) on a live site. A pinned URL never changes;
 `@1` follows the newest 1.x release.
 
 ## Who does what
@@ -63,7 +63,7 @@ enough; this package is for the rest.
 | Keep the address bar as it is               | — the `#id` is always written                      | ✓ `data-pg-anchor-hash`, either way               |
 | Stop when the user scrolls mid-way          | Lenis only                                         | ✓                                                 |
 | Show a button after some scrolling          | —                                                  | ✓ `data-pg-anchor-visible`                        |
-| Keep it off the footer and other areas      | —                                                  | ✓ `data-pg-anchor-avoid`                          |
+| Keep it off the footer and other areas      | —                                                  | ✓ `data-pg-anchor-avoid`: step aside, or pass under |
 | Mark the menu link of the current section   | —                                                  | ✓ `data-pg-anchor-spy`, any number of menus       |
 
 ## Files
@@ -71,7 +71,7 @@ enough; this package is for the rest.
 | File              | For                                                              |
 | ----------------- | ---------------------------------------------------------------- |
 | `index.ts`        | TypeScript source — import it directly in a TS / bundler project |
-| `index.css`       | The CSS half: the lengths, hiding, stepping aside                |
+| `index.css`       | The CSS half: the lengths, hiding, stepping aside, passing under |
 | `dist/index.js`   | Compiled ES module — plain HTML, no build step                   |
 | `dist/index.d.ts` | Types for `dist/index.js`                                        |
 
@@ -92,9 +92,10 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 | `data-pg-anchor-duration`    | it, or anything above    | The glide, in ms. Default `1200`; `0` jumps                             |
 | `data-pg-anchor-hash`        | it, or anything above    | `"true"` writes `#id` to the address bar; `"false"` (default) does not  |
 | `data-pg-anchor-visible`     | a floating element       | Write `"false"`; anchor sets `"true"` once the page has scrolled enough |
-| `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way                                   |
+| `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way; `"hide"`: they pass under it     |
 | `data-pg-anchor-avoid-media` | a floating element       | A media query: avoid only where it matches. Default: everywhere         |
 | `data-pg-anchor-spy`         | a menu                   | Its links mark the section you are in                                   |
+| `data-pg-anchor-covered`     | a floating element       | `"true"` while wholly under a `"hide"` area, written by anchor          |
 | `data-pg-anchor-current`     | a link in a spy menu     | `"true"` or `"false"`, written by anchor                                |
 
 "It, or anything above": the nearest one wins, so a value on `<body>` is
@@ -126,6 +127,7 @@ anchor writes these, to read in your CSS:
 | `--pg-anchor-current-left` / `-top`     | a spy menu         | Where the current link sits inside the menu   |
 | `--pg-anchor-current-width` / `-height` | a spy menu         | Its size — `0px` when no section is current   |
 | `--pg-anchor-lift`                      | a floating element | How far it stepped aside (used by `index.css`) |
+| `--pg-anchor-clip`                      | a floating element | The part a `"hide"` area covers (used by `index.css`) |
 
 ## Where a section lands
 
@@ -204,7 +206,7 @@ it on one link, or on `<body>` for all of them.
     aria-label="Back to top"
 >↑</button>
 
-<div class="band" data-pg-anchor-avoid>…</div>
+<div class="band" data-pg-anchor-avoid="hide">…</div>
 <footer data-pg-anchor-avoid>…</footer>
 ```
 
@@ -229,14 +231,24 @@ it on one link, or on `<body>` for all of them.
 - **Showing.** `data-pg-anchor-visible` turns `"true"` once the page has
   scrolled `--pg-anchor-show-after`. `index.css` hides the `"false"` state
   at zero weight — add your own transition to fade it.
-- **Stepping aside.** When an avoided area passes under it, it moves to
-  that area's edge and keeps `--pg-anchor-avoid-space`: up when it sits in
-  the lower half of the screen, down in the upper. Areas back to back are
-  cleared together. `data-pg-anchor-avoid-media="(width >= 62rem)"` limits
-  this to wide screens.
-- It moves with the `translate` property, so your `bottom` and any
-  `transform` are kept. An area taller than the screen cannot be stepped
-  around — the element stays on screen over it.
+- **Stepping aside — `data-pg-anchor-avoid`.** When the area reaches it,
+  it moves to that area's edge and keeps `--pg-anchor-avoid-space`: up when
+  it sits in the lower half of the screen, down in the upper. Areas back to
+  back are cleared together. It moves with the `translate` property, so
+  your `bottom` and any `transform` are kept. An area taller than the
+  screen cannot be stepped around — the element stays on screen over it.
+- **Passing under — `data-pg-anchor-avoid="hide"`.** It stays where it is
+  and goes under the area: the part the area covers is cut off
+  (`clip-path`), so it slides in at one edge and comes out at the other.
+  Wholly under, it gets `data-pg-anchor-covered="true"` and is out of reach
+  of Tab and clicks.
+- **Which one.** Stepping aside suits areas at the end of the page, such as
+  the footer: they never pass by. An area in the middle of the page does
+  pass by — once its lower edge has gone above the element, the element
+  drops back down by the area's height in one go. Mid-page, passing under
+  is smoother.
+- `data-pg-anchor-avoid-media="(width >= 62rem)"` on the element limits
+  both to wide screens.
 
 Any fixed element can float this way, not only a back-to-top button; give
 it `data-pg-anchor-visible` and a `--pg-anchor-show-after` of `0px` to
@@ -301,7 +313,7 @@ Without JavaScript, links with an `href` still jump, and nothing is hidden.
 | jQuery `animate`, 500 / 750 ms                                         | `data-pg-anchor-duration`, in both modes                   |
 | Header height − 30px, measured                                         | `scroll-padding-top` / `scroll-margin-top`, `--pg-anchor-edge` |
 | `qua-active` after 400px                                               | `data-pg-anchor-visible`, `--pg-anchor-show-after`         |
-| `data-qua-smoothScrollSpace`, footer only, desktop only                | `data-pg-anchor-avoid` on any area, `--pg-anchor-avoid-space`, `data-pg-anchor-avoid-media` |
+| `data-qua-smoothScrollSpace`, footer only, desktop only                | `data-pg-anchor-avoid` (or `="hide"`) on any area, `--pg-anchor-avoid-space`, `data-pg-anchor-avoid-media` |
 | "Scroll Color Switch" and `.qua-slider`                                | `data-pg-anchor-spy`, `--pg-anchor-current-*`              |
 
 ## React
