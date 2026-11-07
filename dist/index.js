@@ -54,6 +54,13 @@
  * --pg-anchor-strip-easing for the slide. Only the row moves, never the
  * page. On load the current item is put in view at once.
  *
+ * Stay: inside a data-pg-anchor-stay box (an accordion), the item clicked
+ * keeps its place on the screen while the page above it changes — an
+ * answer closing above the question just opened, however it animates. The
+ * page scrolls by what the item would have moved, frame by frame, until it
+ * has been still a while; the user's wheel, touch or keys stop it.
+ * --pg-anchor-stay: none turns it off, per screen size.
+ *
  * A <p> or <div> with data-pg-anchor is made reachable: tabindex="0",
  * role="link", and Enter.
  */
@@ -65,6 +72,7 @@ const SPY = "data-pg-anchor-spy";
 const CURRENT = "data-pg-anchor-current";
 const COVERED = "data-pg-anchor-covered";
 const STRIP = "data-pg-anchor-strip";
+const STAY = "data-pg-anchor-stay";
 const LIFT = "--pg-anchor-lift";
 const CLIP = "--pg-anchor-clip";
 const DEFAULT_DURATION = 1200;
@@ -340,6 +348,46 @@ function spy(menu) {
         writeVar(menu, "--pg-anchor-current-height", "0px");
     }
 }
+/* ---------- Staying in place ---------- */
+/* Still this many frames in a row: whatever moved it has settled. Long
+   enough to outlast a short transition-delay before anything moves. */
+const STILL_FRAMES = 20;
+const STAY_LIMIT = 3000;
+let stopStay = () => { };
+/* Keep `el` where it is on screen: scroll by whatever it drifts. */
+function stay(el) {
+    stopStay();
+    const at = el.getBoundingClientRect().top;
+    const start = performance.now();
+    let still = 0;
+    let frame = 0;
+    const user = ["wheel", "touchstart", "keydown"];
+    const stop = () => {
+        cancelAnimationFrame(frame);
+        user.forEach((type) => removeEventListener(type, stop));
+        stopStay = () => { };
+    };
+    const step = (now) => {
+        if (!el.isConnected)
+            return stop();
+        const drift = el.getBoundingClientRect().top - at;
+        if (Math.abs(drift) >= 0.5) {
+            still = 0;
+            const top = Math.min(Math.max(0, scrollY + drift), maxScroll());
+            (scroller ?? glideTo)(top, 0, anchorEasing);
+        }
+        else {
+            still++;
+        }
+        if (still >= STILL_FRAMES || now - start > STAY_LIMIT)
+            stop();
+        else
+            frame = requestAnimationFrame(step);
+    };
+    user.forEach((type) => addEventListener(type, stop, { passive: true }));
+    stopStay = stop;
+    frame = requestAnimationFrame(step);
+}
 /* ---------- Strips ---------- */
 /* CSS easing keywords and cubic-bezier(), as the browser reads them. */
 const KEYWORDS = {
@@ -533,6 +581,20 @@ export function initAnchor() {
         // first, and the section is measured where it has settled.
         requestAnimationFrame(() => go(el, target, byKeyboard));
     };
+    // Before any other click handler — targetFunctions closing the answer
+    // above — so the place is noted while nothing has moved yet.
+    const onClickFirst = (event) => {
+        if (live !== self || !(event.target instanceof Element))
+            return;
+        const box = event.target.closest(`[${STAY}]`);
+        const item = box && event.target.closest(ITEM);
+        // An item that scrolls the page itself is left to do that.
+        if (!box || !item || !box.contains(item) || item.hasAttribute(ATTR))
+            return;
+        if (keyword(item, "--pg-anchor-stay", ["auto", "none"]) === "none")
+            return;
+        stay(item);
+    };
     const onKeydown = (event) => {
         if (live !== self || event.key !== "Enter" || !(event.target instanceof Element))
             return;
@@ -550,6 +612,7 @@ export function initAnchor() {
             dirty = true;
         schedule();
     });
+    document.addEventListener("click", onClickFirst, true);
     document.addEventListener("click", onClick);
     document.addEventListener("keydown", onKeydown);
     addEventListener("scroll", schedule, { passive: true });
@@ -564,7 +627,9 @@ export function initAnchor() {
     // Now, not a frame later: a strip shows its current item from the start.
     update();
     return () => {
+        document.removeEventListener("click", onClickFirst, true);
         document.removeEventListener("click", onClick);
+        stopStay();
         document.removeEventListener("keydown", onKeydown);
         removeEventListener("scroll", schedule);
         removeEventListener("resize", schedule);

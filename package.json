@@ -1,6 +1,6 @@
 {
     "name": "@plusguard/anchor",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "description": "In-page scrolling from HTML attributes: to a section, the top or the bottom, with a set duration — with or without Lenis. A back-to-top button that shows after a set scroll and steps out of the way of marked elements. Zero dependencies, framework-agnostic. CSS included.",
     "type": "module",
     "main": "./dist/index.js",

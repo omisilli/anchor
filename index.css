@@ -19,6 +19,9 @@
  *   --pg-anchor-avoid         on a floating element, or above: auto
  *                             (default) keeps clear of avoided areas, none
  *                             ignores them
+ *   --pg-anchor-stay          inside a data-pg-anchor-stay box: auto
+ *                             (default) keeps the item clicked in place,
+ *                             none does not
  *   --pg-anchor-strip         on a data-pg-anchor-strip row: where its
  *                             current item is put. center (default) ·
  *                             start · end · none
@@ -68,6 +71,12 @@
 }
 
 @property --pg-anchor-avoid {
+    syntax: "auto | none";
+    inherits: true;
+    initial-value: auto;
+}
+
+@property --pg-anchor-stay {
     syntax: "auto | none";
     inherits: true;
     initial-value: auto;

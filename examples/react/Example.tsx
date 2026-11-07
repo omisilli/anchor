@@ -73,6 +73,7 @@ export function Example() {
             ))}
 
             <Tabs />
+            <Accordion />
 
             {/* Mid-page: the ↑ button passes under it. */}
             <div data-pg-anchor-avoid="hide" className="h-64 bg-neutral-900" />
@@ -163,5 +164,42 @@ export function Tabs() {
                 </div>
             ))}
         </section>
+    );
+}
+
+/*
+ * An accordion, one answer at a time (targetFunctions). When the answer
+ * above closes, the question pressed would ride up with it — off the top of
+ * a phone's screen, if that answer was long. data-pg-anchor-stay on the box
+ * keeps the question pressed where it is, frame by frame, for as long as
+ * the page above it moves. [--pg-anchor-stay:none], in a breakpoint, turns
+ * it off there. The CSS:
+ *
+ *   .acc-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.5s ease; }
+ *   .acc-body > div { overflow: hidden; }
+ *   .acc-body[data-pg-target-active="true"] { grid-template-rows: 1fr; }
+ */
+const questions = [
+    { id: "q1", q: "A long answer", a: "Long enough to be taller than a phone's screen…" },
+    { id: "q2", q: "A short one", a: "Pressed from the end of the first, it stays where you pressed it." },
+    { id: "q3", q: "Another short one", a: "An answer closing below it moves nothing anyway." },
+];
+
+export function Accordion() {
+    return (
+        <div data-pg-anchor-stay>
+            {questions.map(({ id, q, a }) => (
+                <div key={id}>
+                    <button data-pg-target-functions={`close-faq-except-${id} toggle-${id}`} aria-controls={id}>
+                        {q}
+                    </button>
+                    <div className="acc-body" id={id} data-pg-target={`${id} faq`} data-pg-target-active="false">
+                        <div>
+                            <p>{a}</p>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
     );
 }

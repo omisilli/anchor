@@ -8,7 +8,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>anchor — example</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/index.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/index.css" />
         <!-- Only takes effect with ?lenis: it styles html.lenis. -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.css" />
         <style>
@@ -325,6 +325,41 @@
                 margin-top: 0.75rem;
             }
 
+            /* --- An accordion that keeps the question pressed in place --- */
+            .acc {
+                margin-top: 1.5rem;
+                border-top: 1px solid var(--line);
+            }
+            .acc-head {
+                display: block;
+                width: 100%;
+                padding: 1rem 0;
+                font: inherit;
+                font-weight: 600;
+                text-align: left;
+                color: inherit;
+                background: none;
+                border: 0;
+                cursor: pointer;
+            }
+            /* Opening and closing is CSS: a grid row from 0fr to 1fr. */
+            .acc-body {
+                display: grid;
+                grid-template-rows: 0fr;
+                transition: grid-template-rows 0.5s ease;
+                border-bottom: 1px solid var(--line);
+            }
+            .acc-body > div {
+                overflow: hidden;
+            }
+            .acc-body[data-pg-target-active="true"] {
+                grid-template-rows: 1fr;
+            }
+            .acc-body p {
+                color: var(--muted);
+                margin: 0 0 1rem;
+            }
+
             /* The switches above the tabs. */
             .controls {
                 display: grid;
@@ -402,6 +437,7 @@
                 <a href="#three" data-pg-anchor>Three</a>
                 <a href="#four" data-pg-anchor>Four</a>
                 <a href="#tabs" data-pg-anchor>Tabs</a>
+                <a href="#stay" data-pg-anchor>Stay</a>
                 <a href="#five" data-pg-anchor>Five</a>
                 <span class="marker" aria-hidden="true"></span>
             </nav>
@@ -437,6 +473,7 @@
                     <a href="#three" data-pg-anchor>Three</a>
                     <a href="#four" data-pg-anchor>Four</a>
                     <a href="#tabs" data-pg-anchor>Tabs</a>
+                    <a href="#stay" data-pg-anchor>Stay</a>
                     <a href="#five" data-pg-anchor>Five</a>
                     <span class="marker" aria-hidden="true"></span>
                 </nav>
@@ -572,6 +609,45 @@
                         </div>
                     </div>
                 </section>
+                <section id="stay">
+                    <h2>Stay</h2>
+                    <p>
+                        One answer at a time — targetFunctions: <code>close-faq-except-q2 toggle-q2</code>. Open the
+                        long first answer, read down it, press the second question: the first closes above it.
+                        <code>data-pg-anchor-stay</code> on the accordion keeps the question you pressed where it is
+                        on the screen meanwhile. An answer closing below it moves nothing anyway.
+                    </p>
+                    <div class="controls">
+                        <div>
+                            <span>The question pressed</span>
+                            <button type="button" data-stay="auto" aria-pressed="true">stays</button>
+                            <button type="button" data-stay="none" aria-pressed="false">rides up</button>
+                        </div>
+                    </div>
+                    <div class="acc" id="acc-box" data-pg-anchor-stay>
+                        <button class="acc-head" data-pg-target-functions="close-faq-except-q1 toggle-q1" aria-controls="q1">1. A long answer</button>
+                        <div class="acc-body" id="q1" data-pg-target="q1 faq" data-pg-target-active="false">
+                            <div>
+                                <p>A long answer. Read down it, then press the question below it — a short one.</p>
+                                <p>This answer closes over half a second as the next one opens. Everything below it rides up by its height: the question you pressed too.</p>
+                                <p>On a phone, with a long answer, that is far enough to take the question off the top of the screen: the reader is left looking at whatever came after.</p>
+                                <p>With <code>data-pg-anchor-stay</code> on the accordion, the page scrolls by exactly what the question would have moved, frame by frame, for as long as it moves. The question stays put; the answer above slides away out of the top of the screen.</p>
+                                <p>It measures every frame rather than knowing the animation, so any length or curve works — or none at all.</p>
+                                <p>A few more lines, so this answer is taller than a phone's screen.</p>
+                                <p>Nearly there.</p>
+                                <p>The end of the long answer. Now press the next question.</p>
+                            </div>
+                        </div>
+                        <button class="acc-head" data-pg-target-functions="close-faq-except-q2 toggle-q2" aria-controls="q2">2. A short one</button>
+                        <div class="acc-body" id="q2" data-pg-target="q2 faq" data-pg-target-active="false">
+                            <div><p>Short. Pressed from the end of the first, it stayed where you pressed it.</p></div>
+                        </div>
+                        <button class="acc-head" data-pg-target-functions="close-faq-except-q3 toggle-q3" aria-controls="q3">3. Another short one</button>
+                        <div class="acc-body" id="q3" data-pg-target="q3 faq" data-pg-target-active="false">
+                            <div><p>Press the first again from here: it opens above, and nothing below it moves on screen but what it pushes down.</p></div>
+                        </div>
+                    </div>
+                </section>
                 <section id="five">
                     <h2>Five</h2>
                     <p>
@@ -588,7 +664,7 @@
         <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
 
         <script type="module">
-            import { initAnchor, setAnchorScroller } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/dist/index.js";
+            import { initAnchor, setAnchorScroller } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/dist/index.js";
             import { initTargetFunctions } from "https://cdn.jsdelivr.net/gh/omisilli/target-functions@v3.2.0/dist/index.js";
 
             initTargetFunctions();
@@ -619,6 +695,7 @@
                 tell(v);
             });
             choose("hash", (v) => box.setAttribute("data-pg-anchor-hash", v));
+            choose("stay", (v) => document.getElementById("acc-box").style.setProperty("--pg-anchor-stay", v));
             choose("strip", (v) => bar.style.setProperty("--pg-anchor-strip", v));
             choose("duration", (v) => bar.style.setProperty("--pg-anchor-strip-duration", v));
             tell("passed");

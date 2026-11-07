@@ -16,7 +16,7 @@ stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v3.0.0
+npm install github:omisilli/anchor#v3.1.0
 ```
 
 ```ts
@@ -38,16 +38,16 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/dist/index.js";
 
     initAnchor();
 </script>
 ```
 
-Pin the version (`@v3.0.0`) on a live site. A pinned URL never changes;
+Pin the version (`@v3.1.0`) on a live site. A pinned URL never changes;
 `@3` follows the newest 3.x release.
 
 ## Who does what
@@ -68,6 +68,7 @@ enough; this package is for the rest.
 | Keep it off the footer and other areas      | —                                                  | ✓ `data-pg-anchor-avoid`: step aside, or pass under |
 | Mark the menu link of the current section   | —                                                  | ✓ `data-pg-anchor-spy`, any number of menus       |
 | Only back up to a tab's start, never down   | —                                                  | ✓ `--pg-anchor-when: passed`, per screen size     |
+| Keep an accordion's question in place while the answer above closes | `overflow-anchor`, which picks the closing answer itself | ✓ `data-pg-anchor-stay`, any animation |
 | Keep a sideways row's current item in view  | `scrollIntoView`, by hand, on every change         | ✓ `data-pg-anchor-strip`: centred, its own speed  |
 
 ## Files
@@ -98,6 +99,7 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 | `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way; `"hide"`: they pass under it     |
 | `data-pg-anchor-spy`         | a menu                   | Its links mark the section you are in                                   |
 | `data-pg-anchor-strip`       | a row that scrolls sideways | Keeps its current item in view                                       |
+| `data-pg-anchor-stay`        | an accordion, or any box | The item clicked keeps its place on screen while the page above changes |
 | `data-pg-anchor-covered`     | a floating element       | `"true"` while wholly under a `"hide"` area, written by anchor          |
 | `data-pg-anchor-current`     | a link in a spy menu     | `"true"` or `"false"`, written by anchor                                |
 
@@ -127,6 +129,7 @@ it, in media queries or with Tailwind's `md:[--…]`; `1rem`, `100svh` and
 | `--pg-anchor-avoid-space`     | `0px`    | The gap kept from an avoided area                                     |
 | `--pg-anchor-avoid`           | `auto`   | On a floating element: `none` ignores avoided areas                   |
 | `--pg-anchor-when`            | `always` | On a link: when a click scrolls — `always`, `passed`, `never`         |
+| `--pg-anchor-stay`            | `auto`   | Inside a stay box: `none` lets the item clicked move                  |
 | `--pg-anchor-strip`           | `center` | On a strip: where its current item goes — `center`, `start`, `end`, `none` |
 | `--pg-anchor-strip-duration`  | `500ms`  | On a strip: how long it slides; `0s` is at once                       |
 | `--pg-anchor-strip-easing`    | Lenis's curve | On a strip: `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` or `cubic-bezier(…)` |
@@ -388,6 +391,48 @@ goes back to the tab before. Either way, as you like.
 **The bar** is a strip: on a phone, the tab pressed slides to the middle
 (next section).
 
+## Accordions — the question stays put
+
+One answer at a time: pressing a question closes the open answer. When
+that answer is above the question, everything below it rides up as it
+closes — the question pressed too, off the top of a phone's screen if the
+answer was long. The reader is left looking at whatever came after.
+
+```html
+<div class="acc" data-pg-anchor-stay>
+    <button data-pg-target-functions="close-faq-except-q1 toggle-q1">…</button>
+    <div data-pg-target="q1 faq" data-pg-target-active="false">…</div>
+    <button data-pg-target-functions="close-faq-except-q2 toggle-q2">…</button>
+    <div data-pg-target="q2 faq" data-pg-target-active="false">…</div>
+</div>
+```
+
+With `data-pg-anchor-stay`, the question pressed keeps its place on the
+screen: the page scrolls by exactly what it would have moved, frame by
+frame, for as long as it moves. The answer above slides out of the top of
+the screen; the question, and its answer opening below it, stay where the
+reader is looking.
+
+- **Any animation.** It measures every frame instead of knowing the
+  transition — any length, any curve, or none.
+- **Only what is above.** An answer closing below the question moves
+  nothing on screen, so there is nothing to hold.
+- **Until it settles.** It lets go once the question has been still for a
+  moment, or when the user turns the wheel, touches or presses a key.
+- **At the very top** the page cannot scroll any further up: the question
+  moves by what is left.
+- **Per screen size:** `--pg-anchor-stay: none` in a media query turns it
+  off there — on a phone where every answer may stay open, nothing above
+  ever closes anyway.
+- **Not on links that scroll.** An item with `data-pg-anchor` scrolls the
+  page itself; it is left to that.
+
+The box can be anything that holds the clickable items — an accordion, a
+footer's columns, a list whose rows expand. Tabs are the other case: there
+the bar is sticky and does not move, and the content changes at once —
+`--pg-anchor-when: passed` (above) brings the reader to the new tab's
+start.
+
 ## Strips — rows that scroll sideways
 
 A tab bar, a row of chips, a header menu on a phone: anything that scrolls
@@ -537,7 +582,8 @@ remounting in development), only the newest call answers.
 
 See [`examples/react/Example.tsx`](examples/react/Example.tsx). A plain HTML
 version, with every case above and a `?lenis` switch, is in
-[`examples/static/index.html`](examples/static/index.html) — its tabs have
+[`examples/static/index.html`](examples/static/index.html) — an accordion
+whose question stays (or, switched off, rides up), and tabs that have
 switches for `passed`, `always` and `never` (read to the end of the long
 tab, press the short one), for the address, and for the strip's place and
 speed; narrow the window for the strips.
