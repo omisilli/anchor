@@ -9,9 +9,13 @@
  * be left empty — the target is then the link's own #hash, on this page.
  *
  * Options, on the element or anywhere above it (the nearest wins):
- *   data-pg-anchor-duration   the glide, in ms. Default 1200
  *   data-pg-anchor-hash       "true" writes #id to the address bar; "false",
  *                             the default, leaves the address as it is
+ *
+ * The glide is CSS, so it changes per screen size (index.css):
+ *   --pg-anchor-duration      a time. Default 1200ms; 0s is a jump
+ *   --pg-anchor-easing        linear, ease…, cubic-bezier(…). Default: the
+ *                             curve below, Lenis's own
  *
  * When it scrolls: --pg-anchor-when on the element or above (index.css) —
  * "always" (default); "passed", only back up to a section the reader has
@@ -22,7 +26,7 @@
  * scroll-margin-top and --pg-anchor-edge (index.css) — a fixed header is
  * cleared with those, per screen size through media queries.
  *
- * The glide runs frame by frame on Lenis's curve, in both modes; the
+ * The glide runs frame by frame, in both modes; the
  * user's wheel, touch or keys stop it, and with reduced motion asked for it
  * is a jump. On a page with Lenis, hand Lenis in with setAnchorScroller.
  *
@@ -54,7 +58,6 @@
  * role="link", and Enter.
  */
 const ATTR = "data-pg-anchor";
-const DURATION = "data-pg-anchor-duration";
 const HASH = "data-pg-anchor-hash";
 const VISIBLE = "data-pg-anchor-visible";
 const AVOID = "data-pg-anchor-avoid";
@@ -77,8 +80,8 @@ let scroller = null;
 /*
  * With Lenis, hand it in; null goes back to the built-in glide.
  *
- *   setAnchorScroller((top, ms) =>
- *       lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }));
+ *   setAnchorScroller((top, ms, easing) =>
+ *       lenis.scrollTo(top, ms ? { duration: ms / 1000, easing } : { immediate: true }));
  */
 export function setAnchorScroller(next) {
     stopGlide();
@@ -112,7 +115,7 @@ function stopGlide() {
     glide = 0;
     STOPPERS.forEach((type) => removeEventListener(type, stopGlide));
 }
-function glideTo(top, duration) {
+function glideTo(top, duration, easing) {
     stopGlide();
     const from = scrollY;
     // "instant" on every step: a page-wide scroll-behavior: smooth would
@@ -124,7 +127,7 @@ function glideTo(top, duration) {
     const start = performance.now();
     const step = (now) => {
         const t = Math.min(1, (now - start) / duration);
-        scrollTo({ top: from + (top - from) * anchorEasing(t), behavior: "instant" });
+        scrollTo({ top: from + (top - from) * easing(t), behavior: "instant" });
         if (t < 1)
             glide = requestAnimationFrame(step);
         else
@@ -169,13 +172,16 @@ function destination(el, target) {
     const top = section.getBoundingClientRect().top + scrollY - clearance(section, el);
     return Math.min(Math.max(0, Math.round(top)), maxScroll());
 }
-function durationOf(el) {
+/* A <time> variable, in ms. index.css registers them, so the browser hands
+   them back resolved — in seconds; ms is read too. Reduced motion: 0. */
+function timeOf(el, name, fallback) {
     if (reducedMotion())
         return 0;
-    const raw = option(el, DURATION);
-    // Not set, empty or not a number: the default. "0": a jump.
-    const ms = raw ? Number(raw) : Number.NaN;
-    return Number.isFinite(ms) ? Math.max(0, ms) : DEFAULT_DURATION;
+    const raw = getComputedStyle(el).getPropertyValue(name).trim();
+    const n = Number.parseFloat(raw);
+    if (!Number.isFinite(n))
+        return fallback;
+    return Math.max(0, raw.endsWith("ms") ? n : n * 1000);
 }
 const WHEN = ["always", "passed", "never"];
 function go(el, target, byKeyboard) {
@@ -193,7 +199,7 @@ function go(el, target, byKeyboard) {
     const when = keyword(el, "--pg-anchor-when", WHEN);
     if (when === "never" || (when === "passed" && top >= scrollY - 1))
         return;
-    (scroller ?? glideTo)(top, durationOf(el));
+    (scroller ?? glideTo)(top, timeOf(el, "--pg-anchor-duration", DEFAULT_DURATION), easingOf(el, "--pg-anchor-easing"));
     // From the keyboard, Tab carries on from the section, as a real jump
     // would; focus without a scroll of its own, the glide is doing that.
     // Not for "passed": that brings the reader back to the start of what
@@ -362,10 +368,11 @@ function bezier(x1, y1, x2, y2) {
         return at(y1, y2, (lo + hi) / 2);
     };
 }
-/* --pg-anchor-strip-easing: linear, ease, ease-in, ease-out, ease-in-out
-   or cubic-bezier(…). Anything else, or nothing: the glide's own curve. */
-function easingOf(el) {
-    const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-strip-easing").trim().toLowerCase();
+/* --pg-anchor-easing, --pg-anchor-strip-easing: linear, ease, ease-in,
+   ease-out, ease-in-out or cubic-bezier(…). Anything else, or nothing:
+   anchorEasing, Lenis's curve. */
+function easingOf(el, name) {
+    const raw = getComputedStyle(el).getPropertyValue(name).trim().toLowerCase();
     if (raw === "linear")
         return (t) => t;
     if (KEYWORDS[raw])
@@ -376,17 +383,6 @@ function easingOf(el) {
         return bezier(n[0], n[1], n[2], n[3]);
     }
     return anchorEasing;
-}
-/* --pg-anchor-strip-duration, a <time>: index.css registers it, so the
-   browser hands it back in seconds. 0 slides at once. */
-function stripDurationOf(el) {
-    if (reducedMotion())
-        return 0;
-    const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-strip-duration").trim();
-    const n = Number.parseFloat(raw);
-    if (!Number.isFinite(n))
-        return DEFAULT_STRIP_DURATION;
-    return Math.max(0, raw.endsWith("ms") ? n : n * 1000);
 }
 const strips = new WeakMap();
 function stripOf(el) {
@@ -431,12 +427,12 @@ function slide(strip, item, animate) {
     if (to === null)
         return;
     const from = strip.scrollLeft;
-    const duration = animate ? stripDurationOf(strip) : 0;
+    const duration = animate ? timeOf(strip, "--pg-anchor-strip-duration", DEFAULT_STRIP_DURATION) : 0;
     if (duration <= 0 || Math.abs(to - from) < 1) {
         strip.scrollTo({ left: to, behavior: "instant" });
         return;
     }
-    const ease = easingOf(strip);
+    const ease = easingOf(strip, "--pg-anchor-strip-easing");
     const start = performance.now();
     // The user's own wheel, touch or press on the row stops it.
     const stoppers = ["wheel", "touchstart", "pointerdown"];

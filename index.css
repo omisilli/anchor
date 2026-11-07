@@ -23,6 +23,12 @@
  *                             current item is put. center (default) ·
  *                             start · end · none
  *
+ * The page's glide, on the link or above:
+ *   --pg-anchor-duration         a time. Default 1200ms; 0s is a jump
+ *   --pg-anchor-easing           linear, ease, ease-in, ease-out,
+ *                                ease-in-out or cubic-bezier(…). Default:
+ *                                Lenis's own curve
+ *
  * The strip's slide:
  *   --pg-anchor-strip-duration   a time. Default 500ms; 0s is at once
  *   --pg-anchor-strip-easing     linear, ease, ease-in, ease-out,
@@ -73,7 +79,13 @@
     initial-value: center;
 }
 
-/* A time, so 0.3s and 300ms both read back the same. */
+/* Times, so 0.3s and 300ms both read back the same. */
+@property --pg-anchor-duration {
+    syntax: "<time>";
+    inherits: true;
+    initial-value: 1200ms;
+}
+
 @property --pg-anchor-strip-duration {
     syntax: "<time>";
     inherits: true;

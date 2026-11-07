@@ -16,7 +16,7 @@ stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v2.0.0
+npm install github:omisilli/anchor#v3.0.0
 ```
 
 ```ts
@@ -38,17 +38,17 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/dist/index.js";
 
     initAnchor();
 </script>
 ```
 
-Pin the version (`@v2.0.0`) on a live site. A pinned URL never changes;
-`@2` follows the newest 2.x release.
+Pin the version (`@v3.0.0`) on a live site. A pinned URL never changes;
+`@3` follows the newest 3.x release.
 
 ## Who does what
 
@@ -60,7 +60,7 @@ enough; this package is for the rest.
 | ------------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
 | Smooth scroll to `#id`                      | `scroll-behavior: smooth`, or Lenis `anchors`      | ✓                                                 |
 | Clear a fixed header                        | `scroll-padding-top` / `scroll-margin-top`         | ✓ reads the same CSS, plus `--pg-anchor-edge`     |
-| How long the scroll takes                   | the browser decides; Lenis only                    | ✓ `data-pg-anchor-duration`, with or without Lenis |
+| How long the scroll takes                   | the browser decides; Lenis only                    | ✓ `--pg-anchor-duration`, per screen size, with or without Lenis |
 | A `<div>` or a `<button>` that scrolls      | —                                                  | ✓ made reachable by keyboard too                  |
 | Keep the address bar as it is               | — the `#id` is always written                      | ✓ `data-pg-anchor-hash`, either way               |
 | Stop when the user scrolls mid-way          | Lenis only                                         | ✓                                                 |
@@ -93,7 +93,6 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 | Attribute                    | On                       | Meaning                                                                 |
 | ---------------------------- | ------------------------ | ----------------------------------------------------------------------- |
 | `data-pg-anchor`             | anything clickable       | The target: `"#id"`, `"top"` or `"bottom"`. On a link, empty: its `#hash` |
-| `data-pg-anchor-duration`    | it, or anything above    | The glide, in ms. Default `1200`; `0` jumps                             |
 | `data-pg-anchor-hash`        | it, or anything above    | `"true"` writes `#id` to the address bar; `"false"` (default) does not  |
 | `data-pg-anchor-visible`     | a floating element       | Write `"false"`; anchor sets `"true"` once the page has scrolled enough |
 | `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way; `"hide"`: they pass under it     |
@@ -106,9 +105,9 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 the site's default and a single link can still set its own.
 
 ```html
-<body data-pg-anchor-duration="1900">
+<body data-pg-anchor-hash="true">
     …
-    <button data-pg-anchor="#prices" data-pg-anchor-duration="400">Prices</button>
+    <a href="#prices" data-pg-anchor data-pg-anchor-hash="false">Prices</a>
 </body>
 ```
 
@@ -121,6 +120,8 @@ it, in media queries or with Tailwind's `md:[--…]`; `1rem`, `100svh` and
 
 | Variable                      | Default  | Meaning                                                               |
 | ----------------------------- | -------- | --------------------------------------------------------------------- |
+| `--pg-anchor-duration`        | `1200ms` | On a link: how long the page glides; `0s` jumps                       |
+| `--pg-anchor-easing`          | Lenis's curve | On a link: `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` or `cubic-bezier(…)` |
 | `--pg-anchor-edge`            | `0px`    | Extra room above a section it lands on                                |
 | `--pg-anchor-show-after`      | `400px`  | How far the page scrolls before a `data-pg-anchor-visible` element shows |
 | `--pg-anchor-avoid-space`     | `0px`    | The gap kept from an avoided area                                     |
@@ -128,7 +129,7 @@ it, in media queries or with Tailwind's `md:[--…]`; `1rem`, `100svh` and
 | `--pg-anchor-when`            | `always` | On a link: when a click scrolls — `always`, `passed`, `never`         |
 | `--pg-anchor-strip`           | `center` | On a strip: where its current item goes — `center`, `start`, `end`, `none` |
 | `--pg-anchor-strip-duration`  | `500ms`  | On a strip: how long it slides; `0s` is at once                       |
-| `--pg-anchor-strip-easing`    | the glide's curve | On a strip: `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` or `cubic-bezier(…)` |
+| `--pg-anchor-strip-easing`    | Lenis's curve | On a strip: `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` or `cubic-bezier(…)` |
 
 anchor writes these, to read in your CSS:
 
@@ -173,28 +174,51 @@ little lower than the rest:
 
 ## The glide
 
-anchor scrolls frame by frame on Lenis's curve — off fast, then a long soft
-landing — for `data-pg-anchor-duration` ms. The user's wheel, a touch or a
-key stops it. With reduced motion asked for, it jumps.
+anchor scrolls frame by frame for `--pg-anchor-duration` — `1200ms` by
+default — on `--pg-anchor-easing`, by default Lenis's curve: off fast,
+then a long soft landing. The user's wheel, a touch or a key stops it. With
+reduced motion asked for, it jumps.
+
+Both are CSS, on the link or anywhere above it: the site's default on
+`:root`, a single link its own, and a phone its own in a media query.
+
+```css
+:root {
+    --pg-anchor-duration: 1.9s;
+}
+@media (width < 48rem) {
+    :root {
+        --pg-anchor-duration: 1.2s; /* a shorter page, a shorter glide */
+    }
+}
+```
+
+```html
+<button data-pg-anchor="#prices" style="--pg-anchor-duration: 400ms">Prices</button>
+<a href="#contact" data-pg-anchor class="[--pg-anchor-easing:ease-in-out]">Contact</a>
+```
 
 A click that also closes a menu (an off-canvas sidebar locking the page)
 is fine: the scroll starts a frame later, after the menu has let go.
 
 ### With Lenis
 
-Hand Lenis in, and Lenis glides instead — same duration, same curve:
+Hand Lenis in, and Lenis glides instead — the same duration and curve,
+handed to it:
 
 ```ts
 import Lenis from "lenis";
-import { initAnchor, setAnchorScroller, anchorEasing } from "@plusguard/anchor";
+import { initAnchor, setAnchorScroller } from "@plusguard/anchor";
 
 const lenis = new Lenis({ autoRaf: true });
 
 initAnchor();
-setAnchorScroller((top, ms) =>
-    lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }),
+setAnchorScroller((top, ms, easing) =>
+    lenis.scrollTo(top, ms ? { duration: ms / 1000, easing } : { immediate: true }),
 );
 ```
+
+`anchorEasing`, Lenis's curve, is exported too.
 
 `setAnchorScroller(null)` goes back to the built-in glide. Leave Lenis's
 own `anchors` option off — both would scroll on the same click.
@@ -418,13 +442,35 @@ Without JavaScript, links with an `href` still jump, and nothing is hidden.
 | ---------------------------------------------------------------------- | ---------------------------------------------------------- |
 | `data-qua-smoothScroll="#id"` / `"top"`                                | `data-pg-anchor="#id"` / `"top"`                           |
 | Lenis-only: nothing happened without `window.lenis`                    | Its own glide; Lenis through `setAnchorScroller`           |
-| jQuery `animate`, 500 / 750 ms                                         | `data-pg-anchor-duration`, in both modes                   |
+| jQuery `animate`, 500 / 750 ms                                         | `--pg-anchor-duration`, in both modes                      |
 | Header height − 30px, measured                                         | `scroll-padding-top` / `scroll-margin-top`, `--pg-anchor-edge` |
 | `qua-active` after 400px                                               | `data-pg-anchor-visible`, `--pg-anchor-show-after`         |
 | `data-qua-smoothScrollSpace`, footer only, desktop only                | `data-pg-anchor-avoid` (or `="hide"`) on any area, `--pg-anchor-avoid-space`, `--pg-anchor-avoid` |
 | "Scroll Color Switch" and `.qua-slider`                                | `data-pg-anchor-spy`, `--pg-anchor-current-*`              |
 | `qua-tabClickSmooth.js`: back to the tab's top below 992px, header measured | `--pg-anchor-when: passed` — every screen, or per media query |
 | `qua-tabStickyScroll.js`: a class added on scroll                      | `position: sticky` — CSS alone                             |
+
+## Upgrading from 2.x
+
+The glide's length moved into CSS, beside the strip's: it changes per
+screen size now, and has an easing.
+
+```html
+<!-- 2.x -->
+<body data-pg-anchor-duration="1900">
+<button data-pg-anchor="#prices" data-pg-anchor-duration="400">
+```
+
+```html
+<!-- 3.x -->
+<body style="--pg-anchor-duration: 1.9s">   <!-- or :root in your CSS -->
+<button data-pg-anchor="#prices" style="--pg-anchor-duration: 400ms">
+```
+
+With Lenis, take the easing your scroller is now handed —
+`(top, ms, easing) => lenis.scrollTo(top, { duration: ms / 1000, easing })` —
+so `--pg-anchor-easing` reaches Lenis too. A scroller that ignores it keeps
+working, on its own curve.
 
 ## Upgrading from 1.x
 
@@ -467,8 +513,8 @@ With `lenis/react`, hand Lenis in from inside `<ReactLenis>`:
 const lenis = useLenis();
 useEffect(() => {
     if (!lenis) return;
-    setAnchorScroller((top, ms) =>
-        lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }),
+    setAnchorScroller((top, ms, easing) =>
+        lenis.scrollTo(top, ms ? { duration: ms / 1000, easing } : { immediate: true }),
     );
     return () => setAnchorScroller(null);
 }, [lenis]);

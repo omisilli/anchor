@@ -9,9 +9,13 @@
  * be left empty — the target is then the link's own #hash, on this page.
  *
  * Options, on the element or anywhere above it (the nearest wins):
- *   data-pg-anchor-duration   the glide, in ms. Default 1200
  *   data-pg-anchor-hash       "true" writes #id to the address bar; "false",
  *                             the default, leaves the address as it is
+ *
+ * The glide is CSS, so it changes per screen size (index.css):
+ *   --pg-anchor-duration      a time. Default 1200ms; 0s is a jump
+ *   --pg-anchor-easing        linear, ease…, cubic-bezier(…). Default: the
+ *                             curve below, Lenis's own
  *
  * When it scrolls: --pg-anchor-when on the element or above (index.css) —
  * "always" (default); "passed", only back up to a section the reader has
@@ -22,7 +26,7 @@
  * scroll-margin-top and --pg-anchor-edge (index.css) — a fixed header is
  * cleared with those, per screen size through media queries.
  *
- * The glide runs frame by frame on Lenis's curve, in both modes; the
+ * The glide runs frame by frame, in both modes; the
  * user's wheel, touch or keys stop it, and with reduced motion asked for it
  * is a jump. On a page with Lenis, hand Lenis in with setAnchorScroller.
  *
@@ -55,7 +59,6 @@
  */
 
 const ATTR = "data-pg-anchor";
-const DURATION = "data-pg-anchor-duration";
 const HASH = "data-pg-anchor-hash";
 const VISIBLE = "data-pg-anchor-visible";
 const AVOID = "data-pg-anchor-avoid";
@@ -78,16 +81,17 @@ const ITEM = "a, button, [role='tab'], [tabindex], [data-pg-anchor]";
 /* Lenis's own curve: off fast, then a long soft landing. */
 export const anchorEasing = (t: number): number => Math.min(1, 1.001 - Math.pow(2, -10 * t));
 
-/* What moves the page to `top` (px) over `duration` (ms; 0 is a jump). */
-export type AnchorScroller = (top: number, duration: number) => void;
+/* What moves the page to `top` (px) over `duration` (ms; 0 is a jump), on
+   `easing` — the element's --pg-anchor-easing. */
+export type AnchorScroller = (top: number, duration: number, easing: (t: number) => number) => void;
 
 let scroller: AnchorScroller | null = null;
 
 /*
  * With Lenis, hand it in; null goes back to the built-in glide.
  *
- *   setAnchorScroller((top, ms) =>
- *       lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }));
+ *   setAnchorScroller((top, ms, easing) =>
+ *       lenis.scrollTo(top, ms ? { duration: ms / 1000, easing } : { immediate: true }));
  */
 export function setAnchorScroller(next: AnchorScroller | null): void {
     stopGlide();
@@ -129,7 +133,7 @@ function stopGlide(): void {
     STOPPERS.forEach((type) => removeEventListener(type, stopGlide));
 }
 
-function glideTo(top: number, duration: number): void {
+function glideTo(top: number, duration: number, easing: (t: number) => number): void {
     stopGlide();
     const from = scrollY;
     // "instant" on every step: a page-wide scroll-behavior: smooth would
@@ -141,7 +145,7 @@ function glideTo(top: number, duration: number): void {
     const start = performance.now();
     const step = (now: number): void => {
         const t = Math.min(1, (now - start) / duration);
-        scrollTo({ top: from + (top - from) * anchorEasing(t), behavior: "instant" });
+        scrollTo({ top: from + (top - from) * easing(t), behavior: "instant" });
         if (t < 1) glide = requestAnimationFrame(step);
         else stopGlide();
     };
@@ -187,12 +191,14 @@ function destination(el: Element, target: string): number | null {
     return Math.min(Math.max(0, Math.round(top)), maxScroll());
 }
 
-function durationOf(el: Element): number {
+/* A <time> variable, in ms. index.css registers them, so the browser hands
+   them back resolved — in seconds; ms is read too. Reduced motion: 0. */
+function timeOf(el: Element, name: string, fallback: number): number {
     if (reducedMotion()) return 0;
-    const raw = option(el, DURATION);
-    // Not set, empty or not a number: the default. "0": a jump.
-    const ms = raw ? Number(raw) : Number.NaN;
-    return Number.isFinite(ms) ? Math.max(0, ms) : DEFAULT_DURATION;
+    const raw = getComputedStyle(el).getPropertyValue(name).trim();
+    const n = Number.parseFloat(raw);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(0, raw.endsWith("ms") ? n : n * 1000);
 }
 
 const WHEN = ["always", "passed", "never"] as const;
@@ -212,7 +218,11 @@ function go(el: Element, target: string, byKeyboard: boolean): void {
     const when = keyword(el, "--pg-anchor-when", WHEN);
     if (when === "never" || (when === "passed" && top >= scrollY - 1)) return;
 
-    (scroller ?? glideTo)(top, durationOf(el));
+    (scroller ?? glideTo)(
+        top,
+        timeOf(el, "--pg-anchor-duration", DEFAULT_DURATION),
+        easingOf(el, "--pg-anchor-easing"),
+    );
 
     // From the keyboard, Tab carries on from the section, as a real jump
     // would; focus without a scroll of its own, the glide is doing that.
@@ -381,10 +391,11 @@ function bezier(x1: number, y1: number, x2: number, y2: number): (t: number) => 
     };
 }
 
-/* --pg-anchor-strip-easing: linear, ease, ease-in, ease-out, ease-in-out
-   or cubic-bezier(…). Anything else, or nothing: the glide's own curve. */
-function easingOf(el: Element): (t: number) => number {
-    const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-strip-easing").trim().toLowerCase();
+/* --pg-anchor-easing, --pg-anchor-strip-easing: linear, ease, ease-in,
+   ease-out, ease-in-out or cubic-bezier(…). Anything else, or nothing:
+   anchorEasing, Lenis's curve. */
+function easingOf(el: Element, name: string): (t: number) => number {
+    const raw = getComputedStyle(el).getPropertyValue(name).trim().toLowerCase();
     if (raw === "linear") return (t) => t;
     if (KEYWORDS[raw]) return bezier(...KEYWORDS[raw]);
     const m = raw.match(/^cubic-bezier\(([^)]+)\)$/);
@@ -395,15 +406,6 @@ function easingOf(el: Element): (t: number) => number {
     return anchorEasing;
 }
 
-/* --pg-anchor-strip-duration, a <time>: index.css registers it, so the
-   browser hands it back in seconds. 0 slides at once. */
-function stripDurationOf(el: Element): number {
-    if (reducedMotion()) return 0;
-    const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-strip-duration").trim();
-    const n = Number.parseFloat(raw);
-    if (!Number.isFinite(n)) return DEFAULT_STRIP_DURATION;
-    return Math.max(0, raw.endsWith("ms") ? n : n * 1000);
-}
 
 type Strip = { item: Element | null | undefined; frame: number; stop: () => void };
 const strips = new WeakMap<HTMLElement, Strip>();
@@ -449,12 +451,12 @@ function slide(strip: HTMLElement, item: Element, animate: boolean): void {
     const to = stripLeft(strip, item);
     if (to === null) return;
     const from = strip.scrollLeft;
-    const duration = animate ? stripDurationOf(strip) : 0;
+    const duration = animate ? timeOf(strip, "--pg-anchor-strip-duration", DEFAULT_STRIP_DURATION) : 0;
     if (duration <= 0 || Math.abs(to - from) < 1) {
         strip.scrollTo({ left: to, behavior: "instant" });
         return;
     }
-    const ease = easingOf(strip);
+    const ease = easingOf(strip, "--pg-anchor-strip-easing");
     const start = performance.now();
     // The user's own wheel, touch or press on the row stops it.
     const stoppers = ["wheel", "touchstart", "pointerdown"] as const;

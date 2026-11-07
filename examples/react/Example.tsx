@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { initAnchor, setAnchorScroller, anchorEasing } from "@plusguard/anchor";
+import { initAnchor, setAnchorScroller } from "@plusguard/anchor";
 import "@plusguard/anchor/index.css";
 import { useLenis } from "lenis/react";
 
@@ -18,8 +18,8 @@ export function LenisToAnchor() {
 
     useEffect(() => {
         if (!lenis) return;
-        setAnchorScroller((top, ms) =>
-            lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }),
+        setAnchorScroller((top, ms, easing) =>
+            lenis.scrollTo(top, ms ? { duration: ms / 1000, easing } : { immediate: true }),
         );
         return () => setAnchorScroller(null);
     }, [lenis]);

@@ -8,7 +8,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>anchor — example</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/index.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/index.css" />
         <!-- Only takes effect with ?lenis: it styles html.lenis. -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.css" />
         <style>
@@ -400,7 +400,7 @@
                 <div class="try">
                     <div data-pg-anchor="#one">↓ A &lt;div&gt;, not a link</div>
                     <a href="#three" data-pg-anchor data-pg-anchor-hash="true">Three · writes #three</a>
-                    <button type="button" data-pg-anchor="#four" data-pg-anchor-duration="400">Four · 400ms</button>
+                    <button type="button" data-pg-anchor="#four" style="--pg-anchor-duration: 400ms">Four · 400ms</button>
                     <button type="button" data-pg-anchor="#two" style="--pg-anchor-edge: 3rem">Two · 3rem lower</button>
                     <button type="button" data-pg-anchor="bottom">Bottom</button>
                     <a id="toggle" href="?lenis">Try with Lenis</a>
@@ -462,8 +462,9 @@
                 <section id="four">
                     <h2>Four</h2>
                     <p>
-                        <code>data-pg-anchor-duration="400"</code> on that button; the rest take the
-                        1200ms default. Turn the wheel during a glide and it stops — as with Lenis.
+                        <code>--pg-anchor-duration: 400ms</code> on that button; the rest take the
+                        1200ms default. A CSS variable, so a phone can take its own, in a media
+                        query. Turn the wheel during a glide and it stops — as with Lenis.
                     </p>
                 </section>
                 <section id="tabs">
@@ -564,7 +565,7 @@
         <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
 
         <script type="module">
-            import { initAnchor, setAnchorScroller, anchorEasing } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/dist/index.js";
+            import { initAnchor, setAnchorScroller } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.0.0/dist/index.js";
             import { initTargetFunctions } from "https://cdn.jsdelivr.net/gh/omisilli/target-functions@v3.2.0/dist/index.js";
 
             initTargetFunctions();
@@ -606,8 +607,8 @@
             if (withLenis) {
                 const { default: Lenis } = await import("https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.mjs");
                 const lenis = new Lenis({ autoRaf: true });
-                setAnchorScroller((top, ms) =>
-                    lenis.scrollTo(top, ms ? { duration: ms / 1000, easing: anchorEasing } : { immediate: true }),
+                setAnchorScroller((top, ms, easing) =>
+                    lenis.scrollTo(top, ms ? { duration: ms / 1000, easing } : { immediate: true }),
                 );
                 mode.textContent = "This page runs Lenis now.";
                 toggle.textContent = "Try without Lenis";
