@@ -116,6 +116,11 @@ export function Example() {
  *
  * The panel lands right below the bar: the page's scroll-padding-top clears
  * the header, scroll-mt-12 the bar (h-12).
+ *
+ * Edge to edge: the bar steps out of the page's 1rem gutter (-mx-4) so a
+ * scrolled tab reaches the screen's sides instead of stopping 1rem short;
+ * px-4 puts the first tab back in line with the text, scroll-px-4 does the
+ * same for --pg-anchor-strip: start.
  */
 const tabs = [
     { id: "t-policies", name: "t1", title: "Policies" },
@@ -131,7 +136,7 @@ export function Tabs() {
         <section className="[--pg-anchor-when:passed]" data-pg-anchor-hash="true">
             <nav
                 data-pg-anchor-strip
-                className="sticky top-14 z-[5] flex h-12 overflow-x-auto border-b bg-white [scrollbar-width:none]"
+                className="sticky top-14 z-[5] -mx-4 flex h-12 scroll-px-4 overflow-x-auto border-b bg-white px-4 [scrollbar-width:none]"
             >
                 {tabs.map(({ id, name, title }) => (
                     <a

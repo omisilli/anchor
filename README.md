@@ -407,6 +407,18 @@ sideways. `data-pg-anchor-strip` keeps its current item in view:
 - **On load,** the current item is put in view at once — a page opened on
   the fourth tab shows the fourth tab in the bar.
 - **Only the row moves**, never the page.
+- **Edge to edge.** A row inside the page's gutter is cut off short of the
+  screen's side, and a scrolled item seems to vanish into a gap. Step it
+  out of the gutter, and put its first item back in line with padding;
+  `scroll-padding` does the same for `start` and `end`:
+
+  ```css
+  .tab-list {
+      margin-inline: -1rem; /* the page's gutter */
+      padding-inline: 1rem;
+      scroll-padding-inline: 1rem;
+  }
+  ```
 
 ```css
 .tab-list {

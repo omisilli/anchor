@@ -84,7 +84,8 @@
                 display: flex;
                 align-items: center;
                 gap: 1rem;
-                padding: 0 1rem;
+                /* No right padding: the menu runs to the screen's edge. */
+                padding: 0 0 0 1rem;
                 background: color-mix(in srgb, var(--bg) 88%, transparent);
                 backdrop-filter: blur(8px);
                 border-bottom: 1px solid var(--line);
@@ -98,6 +99,11 @@
                 gap: 0.25rem;
                 overflow-x: auto;
                 scrollbar-width: none;
+                /* Reaches the screen's right edge, so a scrolled link is not
+                   cut off short of it; the padding keeps the last link off
+                   the edge, scroll-padding does the same for the strip. */
+                padding-right: 1rem;
+                scroll-padding-inline: 0 1rem;
             }
             .menu a {
                 flex: none;
@@ -269,6 +275,23 @@
                 scrollbar-width: none;
                 background: var(--bg);
                 border-bottom: 1px solid var(--line);
+                /* Edge to edge: out of main's 1rem gutter, so a scrolled tab
+                   reaches the screen's sides instead of stopping 1rem short.
+                   The padding puts the first tab back in line with the
+                   text; scroll-padding does the same for the strip. */
+                margin-inline: -1rem;
+                padding-inline: 1rem;
+                scroll-padding-inline: 1rem;
+            }
+            @media (width >= 48rem) {
+                .tab-list {
+                    /* Beside the side list: the left stays with the text,
+                       the right runs to the screen's edge, as the grey bands
+                       do. */
+                    margin-inline: 0 calc((min(64rem, 100vw) - 100vw) / 2 - 1rem);
+                    padding-inline: 0 1rem;
+                    scroll-padding-inline: 0 1rem;
+                }
             }
             .tab {
                 flex: none;
