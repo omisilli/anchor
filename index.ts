@@ -13,6 +13,11 @@
  *   data-pg-anchor-hash       "true" writes #id to the address bar; "false",
  *                             the default, leaves the address as it is
  *
+ * When it scrolls: --pg-anchor-when on the element or above (index.css) —
+ * "always" (default); "passed", only back up to a section the reader has
+ * scrolled past — a tab bar's "start of the new tab" — never down; "never".
+ * A CSS variable, so it changes per screen size.
+ *
  * Where a section lands: below the page's scroll-padding-top, its own
  * scroll-margin-top and --pg-anchor-edge (index.css) — a fixed header is
  * cleared with those, per screen size through media queries.
@@ -23,8 +28,8 @@
  *
  * Showing: an element with data-pg-anchor-visible (write "false" to start)
  * turns "true" once the page has scrolled --pg-anchor-show-after. It also
- * keeps clear of data-pg-anchor-avoid areas, wherever
- * data-pg-anchor-avoid-media matches:
+ * keeps clear of data-pg-anchor-avoid areas, unless its --pg-anchor-avoid
+ * is "none" (per screen size, in a media query):
  *   data-pg-anchor-avoid          it steps out of the way — up when it sits
  *                                 in the lower half of the screen, down in
  *                                 the upper — keeping --pg-anchor-avoid-space
@@ -37,6 +42,14 @@
  * aria-current="location"; the menu gets --pg-anchor-current-left / -top /
  * -width / -height, for a marker that slides under the current link.
  *
+ * Strip: a data-pg-anchor-strip row that scrolls sideways (tabs, chips, a
+ * spy menu) keeps its current item in view — the one marked aria-current,
+ * aria-selected="true" or aria-expanded="true" — and, if none is marked,
+ * the one clicked. --pg-anchor-strip: center (default; at the ends it
+ * simply stops), start, end or none; --pg-anchor-strip-duration and
+ * --pg-anchor-strip-easing for the slide. Only the row moves, never the
+ * page. On load the current item is put in view at once.
+ *
  * A <p> or <div> with data-pg-anchor is made reachable: tabindex="0",
  * role="link", and Enter.
  */
@@ -46,15 +59,21 @@ const DURATION = "data-pg-anchor-duration";
 const HASH = "data-pg-anchor-hash";
 const VISIBLE = "data-pg-anchor-visible";
 const AVOID = "data-pg-anchor-avoid";
-const AVOID_MEDIA = "data-pg-anchor-avoid-media";
 const SPY = "data-pg-anchor-spy";
 const CURRENT = "data-pg-anchor-current";
 const COVERED = "data-pg-anchor-covered";
+const STRIP = "data-pg-anchor-strip";
 const LIFT = "--pg-anchor-lift";
 const CLIP = "--pg-anchor-clip";
 
 const DEFAULT_DURATION = 1200;
 const DEFAULT_SHOW_AFTER = 400;
+const DEFAULT_STRIP_DURATION = 500;
+
+/* What a strip keeps in view: an item marked as the current one. */
+const MARKED = '[aria-current]:not([aria-current="false"]), [aria-selected="true"], [aria-expanded="true"]';
+/* What a click in a strip lands on, when nothing is marked. */
+const ITEM = "a, button, [role='tab'], [tabindex], [data-pg-anchor]";
 
 /* Lenis's own curve: off fast, then a long soft landing. */
 export const anchorEasing = (t: number): number => Math.min(1, 1.001 - Math.pow(2, -10 * t));
@@ -86,6 +105,16 @@ function maxScroll(): number {
 
 function option(el: Element, attr: string): string | null {
     return el.closest(`[${attr}]`)?.getAttribute(attr) ?? null;
+}
+
+/* A keyword CSS variable: one of `values`, else the first of them. */
+function keyword<T extends string>(el: Element, name: string, values: readonly T[]): T {
+    const raw = getComputedStyle(el).getPropertyValue(name).trim();
+    return (values as readonly string[]).includes(raw) ? (raw as T) : values[0];
+}
+
+function reducedMotion(): boolean {
+    return matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 /* ---------- The glide ---------- */
@@ -159,29 +188,38 @@ function destination(el: Element, target: string): number | null {
 }
 
 function durationOf(el: Element): number {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return 0;
+    if (reducedMotion()) return 0;
     const raw = option(el, DURATION);
     // Not set, empty or not a number: the default. "0": a jump.
     const ms = raw ? Number(raw) : Number.NaN;
     return Number.isFinite(ms) ? Math.max(0, ms) : DEFAULT_DURATION;
 }
 
+const WHEN = ["always", "passed", "never"] as const;
+
 function go(el: Element, target: string, byKeyboard: boolean): void {
     const top = destination(el, target);
     if (top === null) return;
 
-    // A section writes its #id; top and bottom clear the hash.
+    // A section writes its #id; top and bottom clear the hash — whether or
+    // not the page then moves.
     if (option(el, HASH) === "true") {
         const hash = target.startsWith("#") ? target : "";
         if (location.hash !== hash) history.pushState(null, "", hash || location.pathname + location.search);
     }
 
+    // "passed": back up to a section scrolled past, never down to one ahead.
+    const when = keyword(el, "--pg-anchor-when", WHEN);
+    if (when === "never" || (when === "passed" && top >= scrollY - 1)) return;
+
     (scroller ?? glideTo)(top, durationOf(el));
 
     // From the keyboard, Tab carries on from the section, as a real jump
     // would; focus without a scroll of its own, the glide is doing that.
+    // Not for "passed": that brings the reader back to the start of what
+    // they are reading, it is no jump — focus stays on the tab pressed.
     const section = sectionOf(target);
-    if (byKeyboard && section) {
+    if (byKeyboard && section && when === "always") {
         if (!section.hasAttribute("tabindex")) section.setAttribute("tabindex", "-1");
         section.focus({ preventScroll: true });
     }
@@ -218,7 +256,8 @@ function show(el: HTMLElement): void {
 }
 
 function stepAside(el: HTMLElement, all: Element[]): void {
-    const media = el.getAttribute(AVOID_MEDIA);
+    // "none", for this screen size: no stepping aside, no passing under.
+    const avoids = keyword(el, "--pg-anchor-avoid", ["auto", "none"] as const) === "auto";
     const areas = all.filter((area) => area.getAttribute(AVOID) !== "hide");
     const under = all.filter((area) => area.getAttribute(AVOID) === "hide");
     const rect = el.getBoundingClientRect();
@@ -226,7 +265,7 @@ function stepAside(el: HTMLElement, all: Element[]): void {
     let clipTop = 0;
     let clipBottom = 0;
 
-    if (all.length && (!media || matchMedia(media).matches)) {
+    if (all.length && avoids) {
         // Where it sits without the lift it has now.
         const now = px(el.style.getPropertyValue(LIFT));
         const top = rect.top + now;
@@ -315,6 +354,137 @@ function spy(menu: HTMLElement): void {
     }
 }
 
+/* ---------- Strips ---------- */
+
+/* CSS easing keywords and cubic-bezier(), as the browser reads them. */
+const KEYWORDS: Record<string, [number, number, number, number]> = {
+    ease: [0.25, 0.1, 0.25, 1],
+    "ease-in": [0.42, 0, 1, 1],
+    "ease-out": [0, 0, 0.58, 1],
+    "ease-in-out": [0.42, 0, 0.58, 1],
+};
+
+function bezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {
+    const at = (a: number, b: number, t: number): number => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+    return (x) => {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        // The curve's t for this x, by halving: monotonic in x for 0 ≤ x1, x2 ≤ 1.
+        let lo = 0;
+        let hi = 1;
+        for (let i = 0; i < 24; i++) {
+            const mid = (lo + hi) / 2;
+            if (at(x1, x2, mid) < x) lo = mid;
+            else hi = mid;
+        }
+        return at(y1, y2, (lo + hi) / 2);
+    };
+}
+
+/* --pg-anchor-strip-easing: linear, ease, ease-in, ease-out, ease-in-out
+   or cubic-bezier(…). Anything else, or nothing: the glide's own curve. */
+function easingOf(el: Element): (t: number) => number {
+    const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-strip-easing").trim().toLowerCase();
+    if (raw === "linear") return (t) => t;
+    if (KEYWORDS[raw]) return bezier(...KEYWORDS[raw]);
+    const m = raw.match(/^cubic-bezier\(([^)]+)\)$/);
+    const n = m ? m[1].split(",").map(Number) : [];
+    if (n.length === 4 && n.every(Number.isFinite) && n[0] >= 0 && n[0] <= 1 && n[2] >= 0 && n[2] <= 1) {
+        return bezier(n[0], n[1], n[2], n[3]);
+    }
+    return anchorEasing;
+}
+
+/* --pg-anchor-strip-duration, a <time>: index.css registers it, so the
+   browser hands it back in seconds. 0 slides at once. */
+function stripDurationOf(el: Element): number {
+    if (reducedMotion()) return 0;
+    const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-strip-duration").trim();
+    const n = Number.parseFloat(raw);
+    if (!Number.isFinite(n)) return DEFAULT_STRIP_DURATION;
+    return Math.max(0, raw.endsWith("ms") ? n : n * 1000);
+}
+
+type Strip = { item: Element | null | undefined; frame: number; stop: () => void };
+const strips = new WeakMap<HTMLElement, Strip>();
+
+function stripOf(el: HTMLElement): Strip {
+    let s = strips.get(el);
+    if (!s) {
+        s = { item: undefined, frame: 0, stop: () => {} };
+        strips.set(el, s);
+    }
+    return s;
+}
+
+/* Where the row's scroll would put `item` as --pg-anchor-strip asks. */
+function stripLeft(strip: HTMLElement, item: Element): number | null {
+    const align = keyword(strip, "--pg-anchor-strip", ["center", "start", "end", "none"] as const);
+    if (align === "none") return null;
+    const css = getComputedStyle(strip);
+    const rtl = css.direction === "rtl";
+    const box = strip.getBoundingClientRect();
+    const r = item.getBoundingClientRect();
+    const left = box.left + strip.clientLeft;
+    const right = left + strip.clientWidth;
+    const padLeft = px(css.scrollPaddingLeft);
+    const padRight = px(css.scrollPaddingRight);
+    const atLeft = (align === "start") !== rtl;
+
+    let delta: number;
+    if (align === "center") delta = r.left + r.width / 2 - (left + strip.clientWidth / 2);
+    else if (atLeft) delta = r.left - (left + padLeft);
+    else delta = r.right - (right - padRight);
+
+    // The ends: it can go no further — so the first items stay at the
+    // start and the last at the end, and only those between are centred.
+    const max = Math.max(0, strip.scrollWidth - strip.clientWidth);
+    const [min, top] = rtl ? [-max, 0] : [0, max];
+    return Math.min(top, Math.max(min, Math.round(strip.scrollLeft + delta)));
+}
+
+function slide(strip: HTMLElement, item: Element, animate: boolean): void {
+    const state = stripOf(strip);
+    state.stop();
+    const to = stripLeft(strip, item);
+    if (to === null) return;
+    const from = strip.scrollLeft;
+    const duration = animate ? stripDurationOf(strip) : 0;
+    if (duration <= 0 || Math.abs(to - from) < 1) {
+        strip.scrollTo({ left: to, behavior: "instant" });
+        return;
+    }
+    const ease = easingOf(strip);
+    const start = performance.now();
+    // The user's own wheel, touch or press on the row stops it.
+    const stoppers = ["wheel", "touchstart", "pointerdown"] as const;
+    const stop = (): void => {
+        cancelAnimationFrame(state.frame);
+        state.frame = 0;
+        stoppers.forEach((type) => strip.removeEventListener(type, stop));
+        state.stop = () => {};
+    };
+    const step = (now: number): void => {
+        const t = Math.min(1, (now - start) / duration);
+        strip.scrollTo({ left: from + (to - from) * ease(t), behavior: "instant" });
+        if (t < 1) state.frame = requestAnimationFrame(step);
+        else stop();
+    };
+    stoppers.forEach((type) => strip.addEventListener(type, stop, { passive: true }));
+    state.stop = stop;
+    state.frame = requestAnimationFrame(step);
+}
+
+/* Keep the marked item in view; the first time, at once. */
+function follow(strip: HTMLElement): void {
+    const state = stripOf(strip);
+    const item = strip.querySelector(MARKED);
+    if (item === state.item) return;
+    const first = state.item === undefined;
+    state.item = item;
+    if (item) slide(strip, item, !first);
+}
+
 /* Only the newest call answers events — a late cleanup from an older one
    (React remounting) cannot switch it off. Same rule as the other packages. */
 let live: object | null = null;
@@ -329,6 +499,7 @@ export function initAnchor(): () => void {
     let floats: HTMLElement[] = [];
     let areas: Element[] = [];
     let menus: HTMLElement[] = [];
+    let rows: HTMLElement[] = [];
     let dirty = true;
     let frame = 0;
 
@@ -340,6 +511,7 @@ export function initAnchor(): () => void {
             floats = [...document.querySelectorAll<HTMLElement>(`[${VISIBLE}]`)];
             areas = [...document.querySelectorAll(`[${AVOID}]`)];
             menus = [...document.querySelectorAll<HTMLElement>(`[${SPY}]`)];
+            rows = [...document.querySelectorAll<HTMLElement>(`[${STRIP}]`)];
             document.querySelectorAll(`[${ATTR}]`).forEach(reachable);
         }
         floats.forEach((el) => {
@@ -347,6 +519,8 @@ export function initAnchor(): () => void {
             stepAside(el, areas);
         });
         menus.forEach(spy);
+        // After the spy: a spy menu that is a strip follows its own mark.
+        rows.forEach(follow);
     };
     const schedule = (): void => {
         if (!frame) frame = requestAnimationFrame(update);
@@ -354,6 +528,17 @@ export function initAnchor(): () => void {
 
     const onClick = (event: MouseEvent): void => {
         if (live !== self || event.button !== 0 || !(event.target instanceof Element)) return;
+
+        // In a strip with nothing marked, the item clicked comes into view.
+        // A marked one is followed by update(), once the click has marked it.
+        const row = event.target.closest<HTMLElement>(`[${STRIP}]`);
+        const item = row && event.target.closest(ITEM);
+        if (row && item && item !== row && row.contains(item)) {
+            requestAnimationFrame(() => {
+                if (live === self && !row.querySelector(MARKED)) slide(row, item, true);
+            });
+        }
+
         const el = event.target.closest(`[${ATTR}]`);
         if (!el) return;
         // A link opened in a new tab or window stays the browser's.
@@ -376,8 +561,11 @@ export function initAnchor(): () => void {
         (el as HTMLElement).click();
     };
 
-    const mo = new MutationObserver(() => {
-        dirty = true;
+    // The marks a strip follows change often — the spy's, a tab's — and
+    // need no new look round the page; anything else does.
+    const MARKS = ["aria-current", "aria-selected", "aria-expanded"];
+    const mo = new MutationObserver((records) => {
+        if (records.some((r) => !r.attributeName || !MARKS.includes(r.attributeName))) dirty = true;
         schedule();
     });
 
@@ -390,9 +578,10 @@ export function initAnchor(): () => void {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: [ATTR, VISIBLE, AVOID, SPY],
+        attributeFilter: [ATTR, VISIBLE, AVOID, SPY, STRIP, ...MARKS],
     });
-    schedule();
+    // Now, not a frame later: a strip shows its current item from the start.
+    update();
 
     return () => {
         document.removeEventListener("click", onClick);

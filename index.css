@@ -12,6 +12,23 @@
  *   --pg-anchor-avoid-space   the gap kept from a data-pg-anchor-avoid area.
  *                             Default 0px
  *
+ * Keywords, the same way — they change with the screen too:
+ *   --pg-anchor-when          on a link, or above: when a click scrolls.
+ *                             always (default) · passed (only back up to a
+ *                             section scrolled past) · never
+ *   --pg-anchor-avoid         on a floating element, or above: auto
+ *                             (default) keeps clear of avoided areas, none
+ *                             ignores them
+ *   --pg-anchor-strip         on a data-pg-anchor-strip row: where its
+ *                             current item is put. center (default) ·
+ *                             start · end · none
+ *
+ * The strip's slide:
+ *   --pg-anchor-strip-duration   a time. Default 500ms; 0s is at once
+ *   --pg-anchor-strip-easing     linear, ease, ease-in, ease-out,
+ *                                ease-in-out or cubic-bezier(…). Default:
+ *                                the page glide's own curve
+ *
  * index.ts writes --pg-anchor-lift (how far the element stepped aside),
  * --pg-anchor-clip (the part a "hide" area covers) and, on a
  * data-pg-anchor-spy menu, --pg-anchor-current-left / -top / -width /
@@ -36,6 +53,31 @@
     syntax: "<length>";
     inherits: true;
     initial-value: 0px;
+}
+
+@property --pg-anchor-when {
+    syntax: "always | passed | never";
+    inherits: true;
+    initial-value: always;
+}
+
+@property --pg-anchor-avoid {
+    syntax: "auto | none";
+    inherits: true;
+    initial-value: auto;
+}
+
+@property --pg-anchor-strip {
+    syntax: "center | start | end | none";
+    inherits: true;
+    initial-value: center;
+}
+
+/* A time, so 0.3s and 300ms both read back the same. */
+@property --pg-anchor-strip-duration {
+    syntax: "<time>";
+    inherits: true;
+    initial-value: 500ms;
 }
 
 /* Not a link or a button, but still clickable. Zero weight: yours wins. */

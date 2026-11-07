@@ -3,8 +3,10 @@
 Scrolling to a place on the page, straight from markup: to a section, the
 top or the bottom, with a glide of a set length — the same with or without
 Lenis. A back-to-top button that shows after a set scroll and steps out of
-the way of marked areas, and menus that mark the section you are in. One
-script, one stylesheet, no dependencies, framework-agnostic.
+the way of marked areas, menus that mark the section you are in, tabs that
+bring the reader back to the start of the one they open, and rows that
+scroll sideways keeping their current item in view. One script, one
+stylesheet, no dependencies, framework-agnostic.
 
 ```html
 <a href="#contact" data-pg-anchor>Contact</a>
@@ -14,7 +16,7 @@ script, one stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v1.1.0
+npm install github:omisilli/anchor#v2.0.0
 ```
 
 ```ts
@@ -36,17 +38,17 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/dist/index.js";
 
     initAnchor();
 </script>
 ```
 
-Pin the version (`@v1.1.0`) on a live site. A pinned URL never changes;
-`@1` follows the newest 1.x release.
+Pin the version (`@v2.0.0`) on a live site. A pinned URL never changes;
+`@2` follows the newest 2.x release.
 
 ## Who does what
 
@@ -65,6 +67,8 @@ enough; this package is for the rest.
 | Show a button after some scrolling          | —                                                  | ✓ `data-pg-anchor-visible`                        |
 | Keep it off the footer and other areas      | —                                                  | ✓ `data-pg-anchor-avoid`: step aside, or pass under |
 | Mark the menu link of the current section   | —                                                  | ✓ `data-pg-anchor-spy`, any number of menus       |
+| Only back up to a tab's start, never down   | —                                                  | ✓ `--pg-anchor-when: passed`, per screen size     |
+| Keep a sideways row's current item in view  | `scrollIntoView`, by hand, on every change         | ✓ `data-pg-anchor-strip`: centred, its own speed  |
 
 ## Files
 
@@ -93,8 +97,8 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 | `data-pg-anchor-hash`        | it, or anything above    | `"true"` writes `#id` to the address bar; `"false"` (default) does not  |
 | `data-pg-anchor-visible`     | a floating element       | Write `"false"`; anchor sets `"true"` once the page has scrolled enough |
 | `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way; `"hide"`: they pass under it     |
-| `data-pg-anchor-avoid-media` | a floating element       | A media query: avoid only where it matches. Default: everywhere         |
 | `data-pg-anchor-spy`         | a menu                   | Its links mark the section you are in                                   |
+| `data-pg-anchor-strip`       | a row that scrolls sideways | Keeps its current item in view                                       |
 | `data-pg-anchor-covered`     | a floating element       | `"true"` while wholly under a `"hide"` area, written by anchor          |
 | `data-pg-anchor-current`     | a link in a spy menu     | `"true"` or `"false"`, written by anchor                                |
 
@@ -110,15 +114,21 @@ the site's default and a single link can still set its own.
 
 ## CSS variables
 
-Lengths are CSS, not attributes, because they change with the screen.
-Set them anywhere above the element, in media queries or with Tailwind's
-`md:[--…]`; `1rem`, `100svh` and `calc()` all work.
+Whatever changes with the screen is CSS, not an attribute — no pixels and
+no media queries in the markup. Set them on the element or anywhere above
+it, in media queries or with Tailwind's `md:[--…]`; `1rem`, `100svh` and
+`calc()` all work.
 
-| Variable                  | Default | Meaning                                                               |
-| ------------------------- | ------- | --------------------------------------------------------------------- |
-| `--pg-anchor-edge`        | `0px`   | Extra room above a section it lands on                                |
-| `--pg-anchor-show-after`  | `400px` | How far the page scrolls before a `data-pg-anchor-visible` element shows |
-| `--pg-anchor-avoid-space` | `0px`   | The gap kept from an avoided area                                     |
+| Variable                      | Default  | Meaning                                                               |
+| ----------------------------- | -------- | --------------------------------------------------------------------- |
+| `--pg-anchor-edge`            | `0px`    | Extra room above a section it lands on                                |
+| `--pg-anchor-show-after`      | `400px`  | How far the page scrolls before a `data-pg-anchor-visible` element shows |
+| `--pg-anchor-avoid-space`     | `0px`    | The gap kept from an avoided area                                     |
+| `--pg-anchor-avoid`           | `auto`   | On a floating element: `none` ignores avoided areas                   |
+| `--pg-anchor-when`            | `always` | On a link: when a click scrolls — `always`, `passed`, `never`         |
+| `--pg-anchor-strip`           | `center` | On a strip: where its current item goes — `center`, `start`, `end`, `none` |
+| `--pg-anchor-strip-duration`  | `500ms`  | On a strip: how long it slides; `0s` is at once                       |
+| `--pg-anchor-strip-easing`    | the glide's curve | On a strip: `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` or `cubic-bezier(…)` |
 
 anchor writes these, to read in your CSS:
 
@@ -247,8 +257,10 @@ it on one link, or on `<body>` for all of them.
   pass by — once its lower edge has gone above the element, the element
   drops back down by the area's height in one go. Mid-page, passing under
   is smoother.
-- `data-pg-anchor-avoid-media="(width >= 62rem)"` on the element limits
-  both to wide screens.
+- **Per screen size: `--pg-anchor-avoid`.** `none` on the element turns
+  both off — in a media query, for one screen size:
+  `@media (width < 62rem) { .up { --pg-anchor-avoid: none } }` avoids on
+  wide screens only.
 
 Any fixed element can float this way, not only a back-to-top button; give
 it `data-pg-anchor-visible` and a `--pg-anchor-show-after` of `0px` to
@@ -292,12 +304,108 @@ have it always shown.
 - The current link also gets `aria-current="location"`.
 - A vertical list uses `--pg-anchor-current-top` and `-height` instead.
 
+## Tabs
+
+A tab bar, with the targetFunctions package opening one tab at a time and
+anchor doing the scrolling. Each tab is a link to its panel:
+
+```html
+<div class="tabs">
+    <nav class="tab-list" data-pg-anchor-strip>
+        <a href="#t-policies" data-pg-anchor data-pg-target-functions="close-tab-except-t1 open-t1">Policies</a>
+        <a href="#t-notices"  data-pg-anchor data-pg-target-functions="close-tab-except-t3 open-t3">Notices</a>
+    </nav>
+    <div id="t-policies" data-pg-target="t1 tab" data-pg-target-active="true">…a long tab…</div>
+    <div id="t-notices"  data-pg-target="t3 tab" data-pg-target-active="false">…a short one…</div>
+</div>
+```
+
+```css
+.tabs {
+    --pg-anchor-when: passed;
+}
+.tab-list {
+    position: sticky; /* the bar follows the reader down — no script */
+    top: var(--header);
+    display: flex;
+    overflow-x: auto;
+}
+.tabs [data-pg-target] {
+    /* The bar's height: a panel lands below it, and below the header that
+       the page's scroll-padding-top already clears. */
+    scroll-margin-top: 3rem;
+}
+.tabs [data-pg-target-active="false"] {
+    display: none;
+}
+```
+
+**Why `passed`.** Read to the end of a long tab, press a short one on the
+sticky bar: the page is suddenly much shorter, and the reader is left where
+the long tab ended — the footer, or the next section — with the tab they
+asked for somewhere above. `passed` brings them back to its start. Only
+back up: at the start of the tabs, or above them, nothing moves — a tab
+pressed there never drags the page down to itself.
+
+| `--pg-anchor-when` | A click…                                                      |
+| ------------------ | ------------------------------------------------------------- |
+| `always` (default) | scrolls to the target, up or down                             |
+| `passed`           | scrolls only up, to a target the reader has scrolled past     |
+| `never`            | does not scroll — the address is still written, if asked      |
+
+It works the same on a computer as on a phone. For one screen size only, a
+media query: `@media (width >= 62rem) { .tabs { --pg-anchor-when: never } }`.
+
+**The address.** By default it is left as it is. With
+`data-pg-anchor-hash="true"` on the tabs, a tab writes its panel's `#id`;
+opening that address opens that tab — targetFunctions reads it — and Back
+goes back to the tab before. Either way, as you like.
+
+**The bar** is a strip: on a phone, the tab pressed slides to the middle
+(next section).
+
+## Strips — rows that scroll sideways
+
+A tab bar, a row of chips, a header menu on a phone: anything that scrolls
+sideways. `data-pg-anchor-strip` keeps its current item in view:
+
+- **Which item.** The one marked `aria-current` (a spy's current link),
+  `aria-selected="true"` or `aria-expanded="true"` (a targetFunctions tab).
+  If nothing in the row is marked, the one clicked.
+- **Where.** `--pg-anchor-strip: center`, the default — and at the ends it
+  simply stops: the first items stay at the start, the last at the end,
+  only those in between are centred, so there is always something to see
+  on both sides. `start` puts the item at the row's start (and its
+  `scroll-padding-left`), `end` at its end, `none` leaves the row alone.
+- **How.** `--pg-anchor-strip-duration` (`500ms`; `0s` at once) and
+  `--pg-anchor-strip-easing`. With reduced motion asked for, it is at once;
+  the user's own wheel, touch or press on the row stops it.
+- **On load,** the current item is put in view at once — a page opened on
+  the fourth tab shows the fourth tab in the bar.
+- **Only the row moves**, never the page.
+
+```css
+.tab-list {
+    --pg-anchor-strip-duration: 300ms;
+    --pg-anchor-strip-easing: ease-out;
+}
+@media (width >= 62rem) {
+    .tab-list {
+        --pg-anchor-strip: none; /* wide enough for every tab */
+    }
+}
+```
+
+A spy menu can be a strip too — `data-pg-anchor-spy data-pg-anchor-strip`:
+on a phone, the link to the section you are in stays in view as you read.
+
 ## Keyboard and screen readers
 
 A `<p>` or `<div>` with `data-pg-anchor` gets `tabindex="0"` and
 `role="link"` (unless it has its own), and Enter presses it. After a
 keyboard press, focus moves to the section — Tab carries on from there,
-as it would after a real jump. Prefer `<a href="#id">` where you can: it
+as it would after a real jump. Not with `passed`: that is no jump, only the
+start of what is being read brought back — focus stays on the tab. Prefer `<a href="#id">` where you can: it
 also works before the script has loaded.
 
 A Cmd- or Ctrl-click on a link is left to the browser — it opens a tab.
@@ -313,8 +421,32 @@ Without JavaScript, links with an `href` still jump, and nothing is hidden.
 | jQuery `animate`, 500 / 750 ms                                         | `data-pg-anchor-duration`, in both modes                   |
 | Header height − 30px, measured                                         | `scroll-padding-top` / `scroll-margin-top`, `--pg-anchor-edge` |
 | `qua-active` after 400px                                               | `data-pg-anchor-visible`, `--pg-anchor-show-after`         |
-| `data-qua-smoothScrollSpace`, footer only, desktop only                | `data-pg-anchor-avoid` (or `="hide"`) on any area, `--pg-anchor-avoid-space`, `data-pg-anchor-avoid-media` |
+| `data-qua-smoothScrollSpace`, footer only, desktop only                | `data-pg-anchor-avoid` (or `="hide"`) on any area, `--pg-anchor-avoid-space`, `--pg-anchor-avoid` |
 | "Scroll Color Switch" and `.qua-slider`                                | `data-pg-anchor-spy`, `--pg-anchor-current-*`              |
+| `qua-tabClickSmooth.js`: back to the tab's top below 992px, header measured | `--pg-anchor-when: passed` — every screen, or per media query |
+| `qua-tabStickyScroll.js`: a class added on scroll                      | `position: sticky` — CSS alone                             |
+
+## Upgrading from 1.x
+
+`data-pg-anchor-avoid-media` is gone: a screen size belongs in CSS. Move it
+into a media query, inverted — it said where to avoid, the variable says
+where not to:
+
+```html
+<!-- 1.x -->
+<button class="up" data-pg-anchor-avoid-media="(width >= 62rem)" …>
+```
+
+```css
+/* 2.x */
+@media (width < 62rem) {
+    .up {
+        --pg-anchor-avoid: none;
+    }
+}
+```
+
+Everything else is as it was; `--pg-anchor-when` and strips are new.
 
 ## React
 
@@ -324,7 +456,7 @@ Call `initAnchor` once, in an effect — it returns its own cleanup:
 useEffect(() => initAnchor(), []);
 ```
 
-The links and sections need no client code. A bare `data-pg-anchor` in JSX
+The links and sections need no client code — tabs and strips included. A bare `data-pg-anchor` in JSX
 is fine: React writes it as `"true"`, which counts as empty. JSX sets the
 starting `data-pg-anchor-visible="false"` and must not change it
 afterwards; from then on anchor owns it.
@@ -347,4 +479,7 @@ remounting in development), only the newest call answers.
 
 See [`examples/react/Example.tsx`](examples/react/Example.tsx). A plain HTML
 version, with every case above and a `?lenis` switch, is in
-[`examples/static/index.html`](examples/static/index.html).
+[`examples/static/index.html`](examples/static/index.html) — its tabs have
+switches for `passed`, `always` and `never` (read to the end of the long
+tab, press the short one), for the address, and for the strip's place and
+speed; narrow the window for the strips.

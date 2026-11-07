@@ -1,13 +1,14 @@
 <!doctype html>
 <!-- Open by double-clicking: both halves load from jsDelivr, not from ../..
      Pinned to this release, so the page and the code always match.
-     Add ?lenis to the address to try the same page with Lenis. -->
+     Add ?lenis to the address to try the same page with Lenis. The tabs
+     are opened and closed by the targetFunctions package, loaded beside. -->
 <html lang="en">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>anchor — example</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/index.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/index.css" />
         <!-- Only takes effect with ?lenis: it styles html.lenis. -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.css" />
         <style>
@@ -249,6 +250,90 @@
                 border-top: 1px solid var(--line);
             }
 
+            /* --- Tabs: targetFunctions opens them, anchor scrolls --- */
+            .tabs {
+                margin-top: 1.5rem;
+                --tab-bar: 3rem;
+                /* Only back up to the start of a tab scrolled past. Per
+                   screen size if you like: inside a media query,
+                   "never" turns it off there. */
+                --pg-anchor-when: passed;
+            }
+            .tab-list {
+                position: sticky;
+                top: var(--header);
+                z-index: 5;
+                display: flex;
+                height: var(--tab-bar);
+                overflow-x: auto;
+                scrollbar-width: none;
+                background: var(--bg);
+                border-bottom: 1px solid var(--line);
+            }
+            .tab {
+                flex: none;
+                display: grid;
+                place-items: center;
+                padding: 0 1.1rem;
+                color: var(--muted);
+                text-decoration: none;
+                border-bottom: 2px solid transparent;
+                white-space: nowrap;
+            }
+            .tab[aria-expanded="true"] {
+                color: var(--fg);
+                border-bottom-color: var(--accent);
+            }
+            .tab-panel {
+                padding: 1.25rem 0;
+                /* Lands right below the sticky tab bar: the page's
+                   scroll-padding-top clears the header and 1rem; this adds
+                   the bar and takes the 1rem back. */
+                scroll-margin-top: calc(var(--tab-bar) - 1rem);
+            }
+            .tab-panel[data-pg-target-active="false"] {
+                display: none;
+            }
+            .tab-panel h3 {
+                font-size: 1.1rem;
+            }
+            .tab-panel p {
+                color: var(--muted);
+                margin-top: 0.75rem;
+            }
+
+            /* The switches above the tabs. */
+            .controls {
+                display: grid;
+                gap: 0.6rem;
+                margin-top: 1.25rem;
+                font-size: 0.9rem;
+            }
+            .controls > div {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.4rem;
+            }
+            .controls span {
+                min-width: 9rem;
+                color: var(--muted);
+            }
+            .controls button {
+                font: inherit;
+                color: inherit;
+                padding: 0.3rem 0.7rem;
+                border: 1px solid var(--line);
+                border-radius: 0.5rem;
+                background: var(--surface);
+                cursor: pointer;
+            }
+            .controls button[aria-pressed="true"] {
+                background: var(--fg);
+                color: var(--bg);
+                border-color: var(--fg);
+            }
+
             /* --- Back to top --- */
             .up {
                 position: fixed;
@@ -286,11 +371,14 @@
     <body>
         <header>
             <strong>anchor</strong>
-            <nav class="menu" data-pg-anchor-spy>
+            <!-- A spy and a strip: on a phone it scrolls sideways, and the
+                 section you are in stays in view. -->
+            <nav class="menu" data-pg-anchor-spy data-pg-anchor-strip>
                 <a href="#one" data-pg-anchor>One</a>
                 <a href="#two" data-pg-anchor>Two</a>
                 <a href="#three" data-pg-anchor>Three</a>
                 <a href="#four" data-pg-anchor>Four</a>
+                <a href="#tabs" data-pg-anchor>Tabs</a>
                 <a href="#five" data-pg-anchor>Five</a>
                 <span class="marker" aria-hidden="true"></span>
             </nav>
@@ -305,7 +393,8 @@
                 </p>
                 <p>
                     The header's menu and the side list follow along: the link to the section
-                    you are in is marked. The ↑ button shows after a screen of scrolling and slides
+                    you are in is marked — and on a phone, where the header's menu scrolls
+                    sideways, it stays in view. The ↑ button shows after a screen of scrolling and slides
                     out of the way of the grey bands in section Two and of the footer.
                 </p>
                 <div class="try">
@@ -324,6 +413,7 @@
                     <a href="#two" data-pg-anchor>Two</a>
                     <a href="#three" data-pg-anchor>Three</a>
                     <a href="#four" data-pg-anchor>Four</a>
+                    <a href="#tabs" data-pg-anchor>Tabs</a>
                     <a href="#five" data-pg-anchor>Five</a>
                     <span class="marker" aria-hidden="true"></span>
                 </nav>
@@ -376,6 +466,88 @@
                         1200ms default. Turn the wheel during a glide and it stops — as with Lenis.
                     </p>
                 </section>
+                <section id="tabs">
+                    <h2>Tabs</h2>
+                    <p>
+                        targetFunctions opens one tab at a time; anchor takes care of the scroll. Each tab is a
+                        link to its panel: <code>&lt;a href="#t-notices" data-pg-anchor
+                        data-pg-target-functions="close-tab-except-t3 open-t3"&gt;</code>. The bar is sticky and
+                        is a <code>data-pg-anchor-strip</code>: narrow the window and the tab you press slides to
+                        the middle — the first ones stay at the start, the last at the end.
+                    </p>
+                    <div class="controls">
+                        <div>
+                            <span>When a tab scrolls</span>
+                            <button type="button" data-when="passed" aria-pressed="true">passed</button>
+                            <button type="button" data-when="always" aria-pressed="false">always</button>
+                            <button type="button" data-when="never" aria-pressed="false">never</button>
+                        </div>
+                        <div>
+                            <span>The address bar</span>
+                            <button type="button" data-hash="false" aria-pressed="true">left as it is</button>
+                            <button type="button" data-hash="true" aria-pressed="false">writes #t-…</button>
+                        </div>
+                        <div>
+                            <span>The bar puts the tab</span>
+                            <button type="button" data-strip="center" aria-pressed="true">center</button>
+                            <button type="button" data-strip="start" aria-pressed="false">start</button>
+                            <button type="button" data-strip="none" aria-pressed="false">none</button>
+                        </div>
+                        <div>
+                            <span>The bar slides</span>
+                            <button type="button" data-duration="500ms" aria-pressed="true">500ms</button>
+                            <button type="button" data-duration="1.2s" aria-pressed="false">1.2s</button>
+                            <button type="button" data-duration="0s" aria-pressed="false">at once</button>
+                        </div>
+                    </div>
+                    <p id="explain"></p>
+
+                    <div class="tabs" id="tab-box">
+                        <nav class="tab-list" data-pg-anchor-strip>
+                            <a class="tab" href="#t-policies" data-pg-anchor data-pg-target-functions="close-tab-except-t1 open-t1" aria-controls="t-policies">Policies</a>
+                            <a class="tab" href="#t-procedures" data-pg-anchor data-pg-target-functions="close-tab-except-t2 open-t2" aria-controls="t-procedures">Procedures</a>
+                            <a class="tab" href="#t-notices" data-pg-anchor data-pg-target-functions="close-tab-except-t3 open-t3" aria-controls="t-notices">Notices</a>
+                            <a class="tab" href="#t-cookies" data-pg-anchor data-pg-target-functions="close-tab-except-t4 open-t4" aria-controls="t-cookies">Cookie policy</a>
+                            <a class="tab" href="#t-request" data-pg-anchor data-pg-target-functions="close-tab-except-t5 open-t5" aria-controls="t-request">Request form</a>
+                            <a class="tab" href="#t-archive" data-pg-anchor data-pg-target-functions="close-tab-except-t6 open-t6" aria-controls="t-archive">Archive</a>
+                        </nav>
+                        <div class="tab-panel" id="t-policies" data-pg-target="t1 tab" data-pg-target-active="true">
+                            <h3>Policies — a long tab</h3>
+                            <p>Read on to the end of this tab, then press <strong>Notices</strong> — a short one — on the bar, which has followed you down.</p>
+                            <p>These paragraphs only make the tab long. A policy page reads like this: clause after clause, the reader far below where the tab began by the time they reach the bottom.</p>
+                            <p>The panels are all one height on a computer and on a phone alike: whatever is open sets the page's length, so switching from a long tab to a short one takes the page out from under the reader.</p>
+                            <p>That is the moment this example is about. With nothing done, the reader is left where the long tab ended — now the footer, or the next section — and the short tab they asked for is somewhere above.</p>
+                            <p>With <code>--pg-anchor-when: passed</code>, anchor brings them back to the start of the new tab. Only back up: at the top of the tabs, or above them, nothing moves.</p>
+                            <p>It is the same on a computer as on a phone. Turn it off for one screen size with a media query — <code>@media (width &gt;= 62rem) { .tabs { --pg-anchor-when: never } }</code> — no pixels in the markup.</p>
+                            <p>A few more paragraphs, so the end of this tab is well below where it started, even on a tall screen.</p>
+                            <p>Clause seven. The reader is now a long way down the page.</p>
+                            <p>Clause eight. The bar above has stayed with them all the way — it is sticky, plain CSS.</p>
+                            <p>Clause nine. Nearly there.</p>
+                            <p>Clause ten, the last. Now press Notices.</p>
+                        </div>
+                        <div class="tab-panel" id="t-procedures" data-pg-target="t2 tab" data-pg-target-active="false">
+                            <h3>Procedures</h3>
+                            <p>A middling tab. Press another tab from up here, at its start: with <code>passed</code> the page does not move; with <code>always</code> it does, down to the tab.</p>
+                            <p>Its own address is <code>#t-procedures</code>: with "writes #t-…" on, the address ends in it, and opening that address opens this tab — targetFunctions reads it.</p>
+                        </div>
+                        <div class="tab-panel" id="t-notices" data-pg-target="t3 tab" data-pg-target-active="false">
+                            <h3>Notices — a short tab</h3>
+                            <p>One paragraph. Pressed from the bottom of Policies with <code>passed</code>, you are here, at its start. With <code>never</code>, look where you were left.</p>
+                        </div>
+                        <div class="tab-panel" id="t-cookies" data-pg-target="t4 tab" data-pg-target-active="false">
+                            <h3>Cookie policy</h3>
+                            <p>A short tab too.</p>
+                        </div>
+                        <div class="tab-panel" id="t-request" data-pg-target="t5 tab" data-pg-target-active="false">
+                            <h3>Request form</h3>
+                            <p>On a phone, a tab near the end of the bar: the bar slides to its end, and stops there.</p>
+                        </div>
+                        <div class="tab-panel" id="t-archive" data-pg-target="t6 tab" data-pg-target-active="false">
+                            <h3>Archive</h3>
+                            <p>The last tab.</p>
+                        </div>
+                    </div>
+                </section>
                 <section id="five">
                     <h2>Five</h2>
                     <p>
@@ -392,9 +564,40 @@
         <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
 
         <script type="module">
-            import { initAnchor, setAnchorScroller, anchorEasing } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v1.1.0/dist/index.js";
+            import { initAnchor, setAnchorScroller, anchorEasing } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v2.0.0/dist/index.js";
+            import { initTargetFunctions } from "https://cdn.jsdelivr.net/gh/omisilli/target-functions@v3.2.0/dist/index.js";
 
+            initTargetFunctions();
             initAnchor();
+
+            // The switches above the tabs: each sets one CSS variable or
+            // attribute on the tab box — what a stylesheet would set.
+            const box = document.getElementById("tab-box");
+            const bar = box.querySelector("[data-pg-anchor-strip]");
+            const explain = document.getElementById("explain");
+            const words = {
+                passed: "<code>passed</code>: from the bottom of a long tab, a short one brings you back to its start. From its start, or above, nothing moves.",
+                always: "<code>always</code>: every tab scrolls to its start — from above too, so the page moves down when you press a tab at the top.",
+                never: "<code>never</code>: no scroll. Read to the end of Policies and press Notices — you are left where Policies ended.",
+            };
+            const choose = (attr, apply) => {
+                const buttons = [...document.querySelectorAll(`[data-${attr}]`)];
+                buttons.forEach((b) =>
+                    b.addEventListener("click", () => {
+                        buttons.forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+                        apply(b.dataset[attr]);
+                    }),
+                );
+            };
+            const tell = (when) => (explain.innerHTML = words[when]);
+            choose("when", (v) => {
+                box.style.setProperty("--pg-anchor-when", v);
+                tell(v);
+            });
+            choose("hash", (v) => box.setAttribute("data-pg-anchor-hash", v));
+            choose("strip", (v) => bar.style.setProperty("--pg-anchor-strip", v));
+            choose("duration", (v) => bar.style.setProperty("--pg-anchor-strip-duration", v));
+            tell("passed");
 
             // ?lenis: the same page with Lenis. Hand it in, and it glides.
             const withLenis = new URLSearchParams(location.search).has("lenis");

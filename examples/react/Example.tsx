@@ -43,8 +43,13 @@ export function Example() {
 
             {/* A sticky menu that marks the section you are in, with a line
                 that slides under the current link. The sections below clear
-                it with scroll-margin-top. */}
-            <nav data-pg-anchor-spy className="sticky top-0 z-10 flex gap-1 bg-white/90 p-2 backdrop-blur">
+                it with scroll-margin-top. A strip too: on a phone it scrolls
+                sideways, and the current link stays in view. */}
+            <nav
+                data-pg-anchor-spy
+                data-pg-anchor-strip
+                className="sticky top-0 z-10 flex gap-1 overflow-x-auto bg-white/90 p-2 backdrop-blur [scrollbar-width:none]"
+            >
                 {parts.map((p) => (
                     <a
                         key={p.id}
@@ -67,6 +72,8 @@ export function Example() {
                 </section>
             ))}
 
+            <Tabs />
+
             {/* Mid-page: the ↑ button passes under it. */}
             <div data-pg-anchor-avoid="hide" className="h-64 bg-neutral-900" />
 
@@ -76,17 +83,80 @@ export function Example() {
             </footer>
 
             {/* Back to top: shows after one screen (two on wide screens),
-                keeps 16px from avoided areas. JSX sets the starting
+                keeps 16px from avoided areas — on a large screen it ignores
+                them (--pg-anchor-avoid: none). JSX sets the starting
                 data-pg-anchor-visible="false"; from then on anchor owns it. */}
             <button
                 type="button"
                 data-pg-anchor="top"
                 data-pg-anchor-visible="false"
                 aria-label="Back to top"
-                className="fixed right-4 bottom-4 size-12 rounded-full bg-white shadow transition-[opacity,visibility] duration-300 [--pg-anchor-avoid-space:16px] [--pg-anchor-show-after:100svh] md:[--pg-anchor-show-after:200svh]"
+                className="fixed right-4 bottom-4 size-12 rounded-full bg-white shadow transition-[opacity,visibility] duration-300 [--pg-anchor-avoid-space:16px] [--pg-anchor-show-after:100svh] md:[--pg-anchor-show-after:200svh] lg:[--pg-anchor-avoid:none]"
             >
                 ↑
             </button>
         </>
+    );
+}
+
+/*
+ * Tabs: targetFunctions opens one at a time (mount its initTargetFunctions
+ * once, as anchor's), anchor scrolls. Each tab is a link to its panel; the
+ * bar is sticky and a strip.
+ *
+ * - --pg-anchor-when: passed — from far down a long tab, a short one brings
+ *   the reader back to its start; from its start, or above, nothing moves.
+ *   Per screen size: md:[--pg-anchor-when:never] turns it off there.
+ * - data-pg-anchor-strip — on a phone the tab pressed slides to the middle;
+ *   the first ones stay at the start, the last at the end.
+ *   [--pg-anchor-strip:start], [--pg-anchor-strip-duration:300ms],
+ *   [--pg-anchor-strip-easing:ease-out] — or 0s, at once.
+ * - data-pg-anchor-hash="true" writes #t-notices to the address; opening
+ *   that address opens the tab — targetFunctions reads it.
+ *
+ * The panel lands right below the bar: the page's scroll-padding-top clears
+ * the header, scroll-mt-12 the bar (h-12).
+ */
+const tabs = [
+    { id: "t-policies", name: "t1", title: "Policies" },
+    { id: "t-procedures", name: "t2", title: "Procedures" },
+    { id: "t-notices", name: "t3", title: "Notices" },
+    { id: "t-cookies", name: "t4", title: "Cookie policy" },
+    { id: "t-request", name: "t5", title: "Request form" },
+    { id: "t-archive", name: "t6", title: "Archive" },
+];
+
+export function Tabs() {
+    return (
+        <section className="[--pg-anchor-when:passed]" data-pg-anchor-hash="true">
+            <nav
+                data-pg-anchor-strip
+                className="sticky top-14 z-[5] flex h-12 overflow-x-auto border-b bg-white [scrollbar-width:none]"
+            >
+                {tabs.map(({ id, name, title }) => (
+                    <a
+                        key={id}
+                        href={`#${id}`}
+                        data-pg-anchor
+                        data-pg-target-functions={`close-tab-except-${name} open-${name}`}
+                        aria-controls={id}
+                        className="grid flex-none place-items-center border-b-2 border-transparent px-4 whitespace-nowrap text-neutral-500 aria-expanded:border-black aria-expanded:text-black"
+                    >
+                        {title}
+                    </a>
+                ))}
+            </nav>
+            {tabs.map(({ id, name, title }, i) => (
+                <div
+                    key={id}
+                    id={id}
+                    data-pg-target={`${name} tab`}
+                    data-pg-target-active={i === 0 ? "true" : "false"}
+                    className="scroll-mt-12 py-5 data-[pg-target-active=false]:hidden"
+                >
+                    <h3>{title}</h3>
+                </div>
+            ))}
+        </section>
     );
 }
