@@ -8,7 +8,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>anchor — example</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/index.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.0/index.css" />
         <!-- Only takes effect with ?lenis: it styles html.lenis. -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.css" />
         <style>
@@ -413,7 +413,10 @@
                     opacity 0.3s,
                     visibility 0.3s;
                 /* Shows after one screen of scrolling; keeps 1rem from
-                   avoided areas. Both lengths change with the screen. */
+                   avoided areas. Both lengths change with the screen. The
+                   ring: the text's colour, 2px — set here to change it. */
+                --pg-anchor-progress-color: var(--fg);
+                --pg-anchor-progress-width: 2px;
                 --pg-anchor-show-after: 100svh;
                 --pg-anchor-avoid-space: 1rem;
             }
@@ -454,8 +457,17 @@
                     The header's menu and the side list follow along: the link to the section
                     you are in is marked — and on a phone, where the header's menu scrolls
                     sideways, it stays in view. The ↑ button shows after a screen of scrolling and slides
-                    out of the way of the grey bands in section Two and of the footer.
+                    out of the way of the grey bands in section Two and of the footer. A ring round it fills
+                    as you go — from where it showed to the end of the page:
+                    <code>data-pg-anchor-progress</code>.
                 </p>
+                <div class="controls">
+                    <div>
+                        <span>The ↑ button's ring</span>
+                        <button type="button" data-ring="on" aria-pressed="true">on</button>
+                        <button type="button" data-ring="off" aria-pressed="false">off</button>
+                    </div>
+                </div>
                 <div class="try">
                     <div data-pg-anchor="#one">↓ A &lt;div&gt;, not a link</div>
                     <a href="#three" data-pg-anchor data-pg-anchor-hash="true">Three · writes #three</a>
@@ -661,10 +673,11 @@
 
         <footer data-pg-anchor-avoid>A footer, avoided too.</footer>
 
-        <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" aria-label="Back to top">↑</button>
+        <!-- data-pg-anchor-progress: the ring, filling as the page scrolls. -->
+        <button type="button" class="up" data-pg-anchor="top" data-pg-anchor-visible="false" data-pg-anchor-progress aria-label="Back to top">↑</button>
 
         <script type="module">
-            import { initAnchor, setAnchorScroller } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/dist/index.js";
+            import { initAnchor, setAnchorScroller } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.0/dist/index.js";
             import { initTargetFunctions } from "https://cdn.jsdelivr.net/gh/omisilli/target-functions@v3.2.0/dist/index.js";
 
             initTargetFunctions();
@@ -698,6 +711,9 @@
             choose("stay", (v) => document.getElementById("acc-box").style.setProperty("--pg-anchor-stay", v));
             choose("strip", (v) => bar.style.setProperty("--pg-anchor-strip", v));
             choose("duration", (v) => bar.style.setProperty("--pg-anchor-strip-duration", v));
+            // The ring: the attribute on, or off.
+            const up = document.querySelector(".up");
+            choose("ring", (v) => up.toggleAttribute("data-pg-anchor-progress", v === "on"));
             tell("passed");
 
             // ?lenis: the same page with Lenis. Hand it in, and it glides.

@@ -91,6 +91,7 @@ export function Example() {
                 type="button"
                 data-pg-anchor="top"
                 data-pg-anchor-visible="false"
+                data-pg-anchor-progress // a ring round it, filling as the page scrolls
                 aria-label="Back to top"
                 className="fixed right-4 bottom-4 size-12 rounded-full bg-white shadow transition-[opacity,visibility] duration-300 [--pg-anchor-avoid-space:16px] [--pg-anchor-show-after:100svh] md:[--pg-anchor-show-after:200svh] lg:[--pg-anchor-avoid:none]"
             >

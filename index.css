@@ -38,7 +38,14 @@
  *                                ease-in-out or cubic-bezier(…). Default:
  *                                the page glide's own curve
  *
- * index.ts writes --pg-anchor-lift (how far the element stepped aside),
+ * The ring of a data-pg-anchor-progress element — round, positioned (it
+ * is drawn by ::after, over the element's edge):
+ *   --pg-anchor-progress-color   the part filled. Default currentColor
+ *   --pg-anchor-progress-track   the rest. Default transparent
+ *   --pg-anchor-progress-width   its thickness. Default 2px; 0px hides it
+ *
+ * index.ts writes --pg-anchor-progress (0 to 1, on a
+ * data-pg-anchor-progress element), --pg-anchor-lift (how far the element stepped aside),
  * --pg-anchor-clip (the part a "hide" area covers) and, on a
  * data-pg-anchor-spy menu, --pg-anchor-current-left / -top / -width /
  * -height.
@@ -126,4 +133,24 @@
 /* Wholly under a "hide" area: out of reach of Tab and clicks too. */
 [data-pg-anchor-covered="true"] {
     visibility: hidden;
+}
+
+/* The ring round a floating element: filled from the top, clockwise, as
+   far as the page has scrolled since the element showed. Drawn on the
+   element's own edge; a mask leaves only the ring. */
+:where([data-pg-anchor-progress])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: conic-gradient(
+        var(--pg-anchor-progress-color, currentColor) calc(var(--pg-anchor-progress, 0) * 1turn),
+        var(--pg-anchor-progress-track, transparent) 0
+    );
+    mask: radial-gradient(
+        farthest-side,
+        transparent calc(100% - var(--pg-anchor-progress-width, 2px)),
+        #000 calc(100% - var(--pg-anchor-progress-width, 2px) + 0.5px)
+    );
 }

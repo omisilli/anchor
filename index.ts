@@ -31,7 +31,10 @@
  * is a jump. On a page with Lenis, hand Lenis in with setAnchorScroller.
  *
  * Showing: an element with data-pg-anchor-visible (write "false" to start)
- * turns "true" once the page has scrolled --pg-anchor-show-after. It also
+ * turns "true" once the page has scrolled --pg-anchor-show-after. With
+ * data-pg-anchor-progress too, it gets --pg-anchor-progress, 0 to 1: how far
+ * the page has scrolled from where it showed to the end — index.css draws
+ * it as a ring round the element, filling as the page goes. It also
  * keeps clear of data-pg-anchor-avoid areas, unless its --pg-anchor-avoid
  * is "none" (per screen size, in a media query):
  *   data-pg-anchor-avoid          it steps out of the way — up when it sits
@@ -68,6 +71,7 @@
 const ATTR = "data-pg-anchor";
 const HASH = "data-pg-anchor-hash";
 const VISIBLE = "data-pg-anchor-visible";
+const PROGRESS = "data-pg-anchor-progress";
 const AVOID = "data-pg-anchor-avoid";
 const SPY = "data-pg-anchor-spy";
 const CURRENT = "data-pg-anchor-current";
@@ -271,6 +275,12 @@ function show(el: HTMLElement): void {
     const raw = getComputedStyle(el).getPropertyValue("--pg-anchor-show-after");
     const after = raw.trim() ? px(raw) : DEFAULT_SHOW_AFTER;
     write(el, VISIBLE, String(scrollY >= after));
+    // The ring: from where it showed (0) to the end of the page (1).
+    if (el.hasAttribute(PROGRESS)) {
+        const end = maxScroll();
+        const done = end > after ? Math.min(1, Math.max(0, (scrollY - after) / (end - after))) : 1;
+        writeVar(el, "--pg-anchor-progress", done.toFixed(4));
+    }
 }
 
 function stepAside(el: HTMLElement, all: Element[]): void {
@@ -641,7 +651,7 @@ export function initAnchor(): () => void {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: [ATTR, VISIBLE, AVOID, SPY, STRIP, ...MARKS],
+        attributeFilter: [ATTR, VISIBLE, PROGRESS, AVOID, SPY, STRIP, ...MARKS],
     });
     // Now, not a frame later: a strip shows its current item from the start.
     update();

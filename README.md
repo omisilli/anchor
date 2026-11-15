@@ -16,7 +16,7 @@ stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v3.1.0
+npm install github:omisilli/anchor#v3.2.0
 ```
 
 ```ts
@@ -38,10 +38,10 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.0/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.1.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.0/dist/index.js";
 
     initAnchor();
 </script>
@@ -96,6 +96,7 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 | `data-pg-anchor`             | anything clickable       | The target: `"#id"`, `"top"` or `"bottom"`. On a link, empty: its `#hash` |
 | `data-pg-anchor-hash`        | it, or anything above    | `"true"` writes `#id` to the address bar; `"false"` (default) does not  |
 | `data-pg-anchor-visible`     | a floating element       | Write `"false"`; anchor sets `"true"` once the page has scrolled enough |
+| `data-pg-anchor-progress`    | a floating element       | A ring round it, filling as the page scrolls — see Back to top          |
 | `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way; `"hide"`: they pass under it     |
 | `data-pg-anchor-spy`         | a menu                   | Its links mark the section you are in                                   |
 | `data-pg-anchor-strip`       | a row that scrolls sideways | Keeps its current item in view                                       |
@@ -127,6 +128,9 @@ it, in media queries or with Tailwind's `md:[--…]`; `1rem`, `100svh` and
 | `--pg-anchor-edge`            | `0px`    | Extra room above a section it lands on                                |
 | `--pg-anchor-show-after`      | `400px`  | How far the page scrolls before a `data-pg-anchor-visible` element shows |
 | `--pg-anchor-avoid-space`     | `0px`    | The gap kept from an avoided area                                     |
+| `--pg-anchor-progress-color`  | `currentColor` | The ring's filled part                                          |
+| `--pg-anchor-progress-track`  | `transparent` | The ring's rest                                                  |
+| `--pg-anchor-progress-width`  | `2px`    | The ring's thickness; `0px` hides it — on one screen size, say        |
 | `--pg-anchor-avoid`           | `auto`   | On a floating element: `none` ignores avoided areas                   |
 | `--pg-anchor-when`            | `always` | On a link: when a click scrolls — `always`, `passed`, `never`         |
 | `--pg-anchor-stay`            | `auto`   | Inside a stay box: `none` lets the item clicked move                  |
@@ -140,6 +144,7 @@ anchor writes these, to read in your CSS:
 | --------------------------------------- | ------------------ | --------------------------------------------- |
 | `--pg-anchor-current-left` / `-top`     | a spy menu         | Where the current link sits inside the menu   |
 | `--pg-anchor-current-width` / `-height` | a spy menu         | Its size — `0px` when no section is current   |
+| `--pg-anchor-progress`                  | a floating element | `0` to `1`: how far the page has scrolled since it showed (used by `index.css`) |
 | `--pg-anchor-lift`                      | a floating element | How far it stepped aside (used by `index.css`) |
 | `--pg-anchor-clip`                      | a floating element | The part a `"hide"` area covers (used by `index.css`) |
 
@@ -240,6 +245,7 @@ it on one link, or on `<body>` for all of them.
     class="up"
     data-pg-anchor="top"
     data-pg-anchor-visible="false"
+    data-pg-anchor-progress
     aria-label="Back to top"
 >↑</button>
 
@@ -268,6 +274,15 @@ it on one link, or on `<body>` for all of them.
 - **Showing.** `data-pg-anchor-visible` turns `"true"` once the page has
   scrolled `--pg-anchor-show-after`. `index.css` hides the `"false"` state
   at zero weight — add your own transition to fade it.
+- **A ring that fills — `data-pg-anchor-progress`.** Round the button, on
+  its edge: empty where it first shows, full at the end of the page,
+  filling from the top, clockwise, as the page scrolls — and emptying as it
+  goes back up. Leave the attribute out for no ring. Its look is CSS:
+  `--pg-anchor-progress-color` (default the text's colour),
+  `--pg-anchor-progress-track` (the unfilled part, default none) and
+  `--pg-anchor-progress-width` (default `2px`; `0px` in a media query hides
+  it on one screen size). Drawn by `::after` on a round, positioned
+  element — a fixed button is both.
 - **Stepping aside — `data-pg-anchor-avoid`.** When the area reaches it,
   it moves to that area's edge and keeps `--pg-anchor-avoid-space`: up when
   it sits in the lower half of the screen, down in the upper. Areas back to
