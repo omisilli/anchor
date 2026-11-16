@@ -16,7 +16,7 @@ stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v3.3.0
+npm install github:omisilli/anchor#v3.3.1
 ```
 
 ```ts
@@ -38,10 +38,10 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.3.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.3.1/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.3.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.3.1/dist/index.js";
 
     initAnchor();
 </script>
@@ -207,7 +207,11 @@ Both are CSS, on the link or anywhere above it: the site's default on
 ```
 
 A click that also closes a menu (an off-canvas sidebar locking the page)
-is fine: the scroll starts a frame later, after the menu has let go.
+is fine: the scroll starts a frame later, after the menu has let go. What
+the link asks for — `--pg-anchor-when`, `-duration`, `-easing`, `-edge`,
+`data-pg-anchor-hash` — is read as it is clicked, so a link the same click
+takes away still gets it: a copy in fit-more-nav's "More", whose list is
+written again when the tab picked comes into the row.
 
 ### With Lenis
 

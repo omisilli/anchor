@@ -189,21 +189,21 @@ function sectionOf(target: string): HTMLElement | null {
     return document.getElementById(decodeURIComponent(target.slice(1)));
 }
 
-/* How far below the screen's top a section lands — the spy's line too. */
-function clearance(section: Element, from: Element): number {
-    return (
-        px(getComputedStyle(document.documentElement).scrollPaddingTop) +
-        px(getComputedStyle(section).scrollMarginTop) +
-        px(getComputedStyle(from).getPropertyValue("--pg-anchor-edge"))
-    );
+/* --pg-anchor-edge where `from` stands. */
+const edgeOf = (from: Element): number => px(getComputedStyle(from).getPropertyValue("--pg-anchor-edge"));
+
+/* How far below the screen's top a section lands — the spy's line too.
+   `edge`: --pg-anchor-edge of the link. */
+function clearance(section: Element, edge: number): number {
+    return px(getComputedStyle(document.documentElement).scrollPaddingTop) + px(getComputedStyle(section).scrollMarginTop) + edge;
 }
 
-function destination(el: Element, target: string): number | null {
+function destination(target: string, edge: number): number | null {
     if (target === "top") return 0;
     if (target === "bottom") return maxScroll();
     const section = sectionOf(target);
     if (!section) return null;
-    const top = section.getBoundingClientRect().top + scrollY - clearance(section, el);
+    const top = section.getBoundingClientRect().top + scrollY - clearance(section, edge);
     return Math.min(Math.max(0, Math.round(top)), maxScroll());
 }
 
@@ -219,15 +219,36 @@ function timeOf(el: Element, name: string, fallback: number): number {
 
 const WHEN = ["always", "passed", "never"] as const;
 
-function go(el: Element, target: string, byKeyboard: boolean): void {
-    const top = destination(el, target);
+/* What a click asks for, read off the element clicked as it is clicked:
+   a frame later, when the page is measured, it may be gone — a copy in a
+   menu the same click closed or wrote again (fit-more-nav's "More"), and
+   a gone element has no CSS to read. */
+type Ask = {
+    when: (typeof WHEN)[number];
+    write: string | null;
+    duration: number;
+    easing: (t: number) => number;
+    edge: number;
+};
+function askOf(el: Element): Ask {
+    return {
+        when: keyword(el, "--pg-anchor-when", WHEN),
+        write: option(el, HASH),
+        duration: timeOf(el, "--pg-anchor-duration", DEFAULT_DURATION),
+        easing: easingOf(el, "--pg-anchor-easing"),
+        edge: edgeOf(el),
+    };
+}
+
+function go(ask: Ask, target: string, byKeyboard: boolean): void {
+    const top = destination(target, ask.edge);
     if (top === null) return;
 
     // A section writes its #id; top and bottom clear the hash — whether or
     // not the page then moves. "true" adds a step to the history, "replace"
     // writes over the address — keeping the history's state, which a
     // router (Next) keeps there.
-    const write = option(el, HASH);
+    const write = ask.write;
     if (write === "true" || write === "replace") {
         const hash = target.startsWith("#") ? target : "";
         const url = hash || location.pathname + location.search;
@@ -238,14 +259,10 @@ function go(el: Element, target: string, byKeyboard: boolean): void {
     }
 
     // "passed": back up to a section scrolled past, never down to one ahead.
-    const when = keyword(el, "--pg-anchor-when", WHEN);
+    const when = ask.when;
     if (when === "never" || (when === "passed" && top >= scrollY - 1)) return;
 
-    (scroller ?? glideTo)(
-        top,
-        timeOf(el, "--pg-anchor-duration", DEFAULT_DURATION),
-        easingOf(el, "--pg-anchor-easing"),
-    );
+    (scroller ?? glideTo)(top, ask.duration, ask.easing);
 
     // From the keyboard, Tab carries on from the section, as a real jump
     // would; focus without a scroll of its own, the glide is doing that.
@@ -360,7 +377,7 @@ function spy(menu: HTMLElement): void {
     for (const link of links) {
         const section = sectionOf(targetOf(link));
         if (!section) continue;
-        const top = section.getBoundingClientRect().top - clearance(section, link);
+        const top = section.getBoundingClientRect().top - clearance(section, edgeOf(link));
         // Reached the landing line (a pixel's slack for rounding) — or, at
         // the very bottom, simply on screen: the last sections can never
         // climb that far.
@@ -633,9 +650,11 @@ export function initAnchor(): () => void {
         event.preventDefault();
         // detail is 0 for a click that came from the keyboard.
         const byKeyboard = event.detail === 0;
-        // A frame later: a menu closed by this same click unlocks the page
-        // first, and the section is measured where it has settled.
-        requestAnimationFrame(() => go(el, target, byKeyboard));
+        // What it asks for now, while it is there; the page a frame later:
+        // a menu closed by this same click unlocks the page first, and the
+        // section is measured where it has settled.
+        const ask = askOf(el);
+        requestAnimationFrame(() => go(ask, target, byKeyboard));
     };
 
     // Before any other click handler — targetFunctions closing the answer
