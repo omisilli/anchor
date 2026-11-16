@@ -465,13 +465,13 @@ function easingOf(el: Element, name: string): (t: number) => number {
 }
 
 
-type Strip = { item: Element | null | undefined; frame: number; stop: () => void };
+type Strip = { item: Element | null | undefined; width: number; frame: number; stop: () => void };
 const strips = new WeakMap<HTMLElement, Strip>();
 
 function stripOf(el: HTMLElement): Strip {
     let s = strips.get(el);
     if (!s) {
-        s = { item: undefined, frame: 0, stop: () => {} };
+        s = { item: undefined, width: 0, frame: 0, stop: () => {} };
         strips.set(el, s);
     }
     return s;
@@ -535,11 +535,20 @@ function slide(strip: HTMLElement, item: Element, animate: boolean): void {
     state.frame = requestAnimationFrame(step);
 }
 
-/* Keep the marked item in view; the first time, at once. */
+/* Keep the marked item in view; the first time, at once. When the row
+   changes width with the same item marked — a phone turned, a panel
+   beside it opened — the item is put back in place at once too: the old
+   scroll no longer shows it where it was, or at all. */
 function follow(strip: HTMLElement): void {
     const state = stripOf(strip);
     const item = strip.querySelector(MARKED);
-    if (item === state.item) return;
+    const width = strip.clientWidth;
+    const resized = width !== state.width;
+    state.width = width;
+    if (item === state.item) {
+        if (item && resized) slide(strip, item, false);
+        return;
+    }
     const first = state.item === undefined;
     state.item = item;
     if (item) slide(strip, item, !first);
@@ -572,6 +581,8 @@ export function initAnchor(): () => void {
             areas = [...document.querySelectorAll(`[${AVOID}]`)];
             menus = [...document.querySelectorAll<HTMLElement>(`[${SPY}]`)];
             rows = [...document.querySelectorAll<HTMLElement>(`[${STRIP}]`)];
+            rowSizes?.disconnect();
+            rows.forEach((row) => rowSizes?.observe(row));
             document.querySelectorAll(`[${ATTR}]`).forEach(reachable);
         }
         floats.forEach((el) => {
@@ -585,6 +596,9 @@ export function initAnchor(): () => void {
     const schedule = (): void => {
         if (!frame) frame = requestAnimationFrame(update);
     };
+    // A strip's own width, not the window's: a row can narrow while the
+    // window stays — a panel beside it opens.
+    const rowSizes = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
 
     const onClick = (event: MouseEvent): void => {
         if (live !== self || event.button !== 0 || !(event.target instanceof Element)) return;
@@ -665,6 +679,7 @@ export function initAnchor(): () => void {
         removeEventListener("resize", schedule);
         removeEventListener("load", schedule);
         mo.disconnect();
+        rowSizes?.disconnect();
         if (frame) cancelAnimationFrame(frame);
         if (live === self) live = null;
     };

@@ -446,7 +446,7 @@ const strips = new WeakMap();
 function stripOf(el) {
     let s = strips.get(el);
     if (!s) {
-        s = { item: undefined, frame: 0, stop: () => { } };
+        s = { item: undefined, width: 0, frame: 0, stop: () => { } };
         strips.set(el, s);
     }
     return s;
@@ -512,12 +512,21 @@ function slide(strip, item, animate) {
     state.stop = stop;
     state.frame = requestAnimationFrame(step);
 }
-/* Keep the marked item in view; the first time, at once. */
+/* Keep the marked item in view; the first time, at once. When the row
+   changes width with the same item marked — a phone turned, a panel
+   beside it opened — the item is put back in place at once too: the old
+   scroll no longer shows it where it was, or at all. */
 function follow(strip) {
     const state = stripOf(strip);
     const item = strip.querySelector(MARKED);
-    if (item === state.item)
+    const width = strip.clientWidth;
+    const resized = width !== state.width;
+    state.width = width;
+    if (item === state.item) {
+        if (item && resized)
+            slide(strip, item, false);
         return;
+    }
     const first = state.item === undefined;
     state.item = item;
     if (item)
@@ -548,6 +557,8 @@ export function initAnchor() {
             areas = [...document.querySelectorAll(`[${AVOID}]`)];
             menus = [...document.querySelectorAll(`[${SPY}]`)];
             rows = [...document.querySelectorAll(`[${STRIP}]`)];
+            rowSizes?.disconnect();
+            rows.forEach((row) => rowSizes?.observe(row));
             document.querySelectorAll(`[${ATTR}]`).forEach(reachable);
         }
         floats.forEach((el) => {
@@ -562,6 +573,9 @@ export function initAnchor() {
         if (!frame)
             frame = requestAnimationFrame(update);
     };
+    // A strip's own width, not the window's: a row can narrow while the
+    // window stays — a panel beside it opens.
+    const rowSizes = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
     const onClick = (event) => {
         if (live !== self || event.button !== 0 || !(event.target instanceof Element))
             return;
@@ -645,6 +659,7 @@ export function initAnchor() {
         removeEventListener("resize", schedule);
         removeEventListener("load", schedule);
         mo.disconnect();
+        rowSizes?.disconnect();
         if (frame)
             cancelAnimationFrame(frame);
         if (live === self)

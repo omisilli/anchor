@@ -16,7 +16,7 @@ stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v3.2.0
+npm install github:omisilli/anchor#v3.2.1
 ```
 
 ```ts
@@ -38,10 +38,10 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.0/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.1/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.0/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.1/dist/index.js";
 
     initAnchor();
 </script>
@@ -466,6 +466,9 @@ sideways. `data-pg-anchor-strip` keeps its current item in view:
   the user's own wheel, touch or press on the row stops it.
 - **On load,** the current item is put in view at once — a page opened on
   the fourth tab shows the fourth tab in the bar.
+- **When the row changes width** — a phone turned on its side and back, a
+  panel beside the row opened — the current item is put back in place at
+  once, not slid. The row's own width is watched, not the window's.
 - **Only the row moves**, never the page.
 - **Edge to edge.** A row inside the page's gutter is cut off short of the
   screen's side, and a scrolled item seems to vanish into a gap. Step it
