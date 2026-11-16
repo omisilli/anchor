@@ -9,8 +9,12 @@
  * be left empty — the target is then the link's own #hash, on this page.
  *
  * Options, on the element or anywhere above it (the nearest wins):
- *   data-pg-anchor-hash       "true" writes #id to the address bar; "false",
- *                             the default, leaves the address as it is
+ *   data-pg-anchor-hash       "true" writes #id to the address bar, a step
+ *                             in the history each time — Back goes back
+ *                             through them; "replace" writes it in place of
+ *                             the address — no step, Back leaves the page;
+ *                             "false", the default, leaves the address as
+ *                             it is
  *
  * The glide is CSS, so it changes per screen size (index.css):
  *   --pg-anchor-duration      a time. Default 1200ms; 0s is a jump
@@ -201,11 +205,19 @@ function go(el, target, byKeyboard) {
     if (top === null)
         return;
     // A section writes its #id; top and bottom clear the hash — whether or
-    // not the page then moves.
-    if (option(el, HASH) === "true") {
+    // not the page then moves. "true" adds a step to the history, "replace"
+    // writes over the address — keeping the history's state, which a
+    // router (Next) keeps there.
+    const write = option(el, HASH);
+    if (write === "true" || write === "replace") {
         const hash = target.startsWith("#") ? target : "";
-        if (location.hash !== hash)
-            history.pushState(null, "", hash || location.pathname + location.search);
+        const url = hash || location.pathname + location.search;
+        if (location.hash !== hash) {
+            if (write === "replace")
+                history.replaceState(history.state, "", url);
+            else
+                history.pushState(null, "", url);
+        }
     }
     // "passed": back up to a section scrolled past, never down to one ahead.
     const when = keyword(el, "--pg-anchor-when", WHEN);

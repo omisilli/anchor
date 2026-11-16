@@ -16,7 +16,7 @@ stylesheet, no dependencies, framework-agnostic.
 ```
 
 ```sh
-npm install github:omisilli/anchor#v3.2.1
+npm install github:omisilli/anchor#v3.3.0
 ```
 
 ```ts
@@ -38,10 +38,10 @@ Load both halves straight from jsDelivr — no install, and the page works
 when opened by double-clicking:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.1/index.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.3.0/index.css" />
 
 <script type="module">
-    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.2.1/dist/index.js";
+    import { initAnchor } from "https://cdn.jsdelivr.net/gh/omisilli/anchor@v3.3.0/dist/index.js";
 
     initAnchor();
 </script>
@@ -62,7 +62,7 @@ enough; this package is for the rest.
 | Clear a fixed header                        | `scroll-padding-top` / `scroll-margin-top`         | ✓ reads the same CSS, plus `--pg-anchor-edge`     |
 | How long the scroll takes                   | the browser decides; Lenis only                    | ✓ `--pg-anchor-duration`, per screen size, with or without Lenis |
 | A `<div>` or a `<button>` that scrolls      | —                                                  | ✓ made reachable by keyboard too                  |
-| Keep the address bar as it is               | — the `#id` is always written                      | ✓ `data-pg-anchor-hash`, either way               |
+| Keep the address bar as it is               | — the `#id` is always written                      | ✓ `data-pg-anchor-hash`: as it is, written with a Back step, or written in place |
 | Stop when the user scrolls mid-way          | Lenis only                                         | ✓                                                 |
 | Show a button after some scrolling          | —                                                  | ✓ `data-pg-anchor-visible`                        |
 | Keep it off the footer and other areas      | —                                                  | ✓ `data-pg-anchor-avoid`: step aside, or pass under |
@@ -94,7 +94,7 @@ npx -p typescript tsc index.ts --outDir dist --declaration --target es2020 --mod
 | Attribute                    | On                       | Meaning                                                                 |
 | ---------------------------- | ------------------------ | ----------------------------------------------------------------------- |
 | `data-pg-anchor`             | anything clickable       | The target: `"#id"`, `"top"` or `"bottom"`. On a link, empty: its `#hash` |
-| `data-pg-anchor-hash`        | it, or anything above    | `"true"` writes `#id` to the address bar; `"false"` (default) does not  |
+| `data-pg-anchor-hash`        | it, or anything above    | `"true"` writes `#id` to the address bar, a Back step each time; `"replace"` writes it in place — no step; `"false"` (default) does not |
 | `data-pg-anchor-visible`     | a floating element       | Write `"false"`; anchor sets `"true"` once the page has scrolled enough |
 | `data-pg-anchor-progress`    | a floating element       | A ring round it, filling as the page scrolls — see Back to top          |
 | `data-pg-anchor-avoid`       | an area                  | Floating elements step out of its way; `"hide"`: they pass under it     |
@@ -233,10 +233,23 @@ own `anchors` option off — both would scroll on the same click.
 
 ## The address bar
 
-By default the address is left as it is, as the old theme did.
-`data-pg-anchor-hash="true"` writes `#id` instead — the link can be shared,
-and Back returns to where you were; `top` and `bottom` clear the hash. Set
-it on one link, or on `<body>` for all of them.
+By default the address is left as it is, as the old theme did. To write
+the `#id` there — so the link can be shared, and a reload lands where you
+are — choose how Back should go:
+
+| `data-pg-anchor-hash` | The address                       | Back                                        |
+| --------------------- | --------------------------------- | ------------------------------------------- |
+| `"false"` (default)   | left as it is                     | the page before                             |
+| `"true"`              | ends in the `#id` pressed         | through every `#id` pressed, then the page before |
+| `"replace"`           | ends in the `#id` pressed         | the page before — no step per press         |
+
+`top` and `bottom` clear the hash. Set it on one link, or on `<body>` for
+all of them.
+
+Left as it is, an address that already has a `#` keeps it: open a page on
+`#t-notices`, press another tab, reload — and Notices opens again. Where
+that matters (tabs, above all), `"true"` or `"replace"` keep the address
+in step with what is open.
 
 ## Back to top
 
@@ -398,10 +411,12 @@ pressed there never drags the page down to itself.
 It works the same on a computer as on a phone. For one screen size only, a
 media query: `@media (width >= 62rem) { .tabs { --pg-anchor-when: never } }`.
 
-**The address.** By default it is left as it is. With
-`data-pg-anchor-hash="true"` on the tabs, a tab writes its panel's `#id`;
-opening that address opens that tab — targetFunctions reads it — and Back
-goes back to the tab before. Either way, as you like.
+**The address.** By default it is left as it is — but a page opened on a
+tab's `#id` keeps that `#id` when another tab is pressed, and a reload
+brings the first tab back. With `data-pg-anchor-hash` on the tabs, a tab
+writes its panel's `#id`; opening that address opens that tab —
+targetFunctions reads it. `"true"`: Back goes back to the tab before.
+`"replace"`: the address follows the tab, and Back leaves the page.
 
 **The bar** is a strip: on a phone, the tab pressed slides to the middle
 (next section).
