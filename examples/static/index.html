@@ -471,6 +471,7 @@
                 <div class="try">
                     <div data-pg-anchor="#one">↓ A &lt;div&gt;, not a link</div>
                     <a href="#three" data-pg-anchor data-pg-anchor-hash="true">Three · writes #three</a>
+                    <a href="#five" data-pg-anchor data-pg-anchor-hash="replace">Five · writes #five, no Back step</a>
                     <button type="button" data-pg-anchor="#four" style="--pg-anchor-duration: 400ms">Four · 400ms</button>
                     <button type="button" data-pg-anchor="#two" style="--pg-anchor-edge: 3rem">Two · 3rem lower</button>
                     <button type="button" data-pg-anchor="bottom">Bottom</button>
@@ -528,7 +529,8 @@
                     <p>
                         That link has <code>data-pg-anchor-hash="true"</code>: the address now ends
                         in <code>#three</code>, and Back returns to where you were. Without it the
-                        address is left as it is.
+                        address is left as it is. "Five" has <code>"replace"</code>: the address ends
+                        in <code>#five</code> too, but no step is added — Back leaves the page.
                     </p>
                 </section>
                 <section id="four">
@@ -663,6 +665,11 @@
                 </section>
                 <section id="five">
                     <h2>Five</h2>
+                    <p>
+                        Reached by "Five · writes #five, no Back step"? The address ends in
+                        <code>#five</code> — <code>data-pg-anchor-hash="replace"</code> wrote it in place
+                        of the old one, so a reload lands here and Back leaves the page.
+                    </p>
                     <p>
                         Scroll on to the footer: it is <code>data-pg-anchor-avoid</code> too, and the
                         ↑ button steps above it. A section too close to the end to climb to the line

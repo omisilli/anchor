@@ -113,8 +113,12 @@ export function Example() {
  *   the first ones stay at the start, the last at the end.
  *   [--pg-anchor-strip:start], [--pg-anchor-strip-duration:300ms],
  *   [--pg-anchor-strip-easing:ease-out] — or 0s, at once.
- * - data-pg-anchor-hash="true" writes #t-notices to the address; opening
- *   that address opens the tab — targetFunctions reads it.
+ * - data-pg-anchor-hash="true" writes #t-notices to the address, a Back
+ *   step each time; opening that address opens the tab — targetFunctions
+ *   reads it. "replace" writes it in place, no step: Back leaves the page.
+ *   Left out, the address stays as it is — and a page opened on a tab's
+ *   #id keeps it when another tab is pressed, so a reload brings that tab
+ *   back.
  *
  * The panel lands right below the bar: the page's scroll-padding-top clears
  * the header, scroll-mt-12 the bar (h-12).
